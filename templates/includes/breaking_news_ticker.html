@@ -1,0 +1,150 @@
+{% if breaking_news_ticker_config.is_enabled %}
+<style>
+  .breaking-news-ticker {
+    --ticker-font-size: {{ breaking_news_ticker_config.font_size|default:20 }}px;
+    --ticker-mobile-font-size: max(14px, calc({{ breaking_news_ticker_config.font_size|default:20 }}px - 3px));
+    position: fixed;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    height: clamp(48px, calc({{ breaking_news_ticker_config.font_size|default:20 }}px + 28px), 96px);
+    display: flex;
+    align-items: center;
+    background: {{ breaking_news_ticker_config.background_color|default:"#B42318" }};
+    color: {{ breaking_news_ticker_config.text_color|default:"#FFFFFF" }};
+    overflow: hidden;
+    z-index: 9999;
+    pointer-events: none;
+    box-shadow: 0 -8px 22px rgba(15, 23, 42, 0.22);
+    font-family: {{ breaking_news_ticker_config.font_stack }};
+  }
+
+  .breaking-news-ticker__viewport {
+    position: relative;
+    flex: 1 1 auto;
+    overflow: hidden;
+    display: flex;
+    align-items: center;
+    height: 100%;
+    padding-inline: 24px;
+  }
+
+  .breaking-news-ticker__track {
+    --ticker-duration: 40s;
+    display: inline-flex;
+    align-items: center;
+    min-width: max-content;
+    white-space: nowrap;
+    will-change: transform;
+    transform: translate3d(0, 0, 0);
+  }
+
+  .breaking-news-ticker__track.is-running {
+    animation: breaking-news-ticker-marquee var(--ticker-duration) linear infinite;
+  }
+
+  .breaking-news-ticker__segment {
+    display: inline-flex;
+    align-items: center;
+    min-width: max-content;
+    padding-inline-end: 56px;
+    font-size: var(--ticker-font-size);
+    font-weight: 700;
+    line-height: 1;
+  }
+
+  @keyframes breaking-news-ticker-marquee {
+    from {
+      transform: translate3d(0, 0, 0);
+    }
+    to {
+      transform: translate3d(-50%, 0, 0);
+    }
+  }
+
+  @media (max-width: 760px) {
+    .breaking-news-ticker {
+      height: clamp(44px, calc({{ breaking_news_ticker_config.font_size|default:20 }}px + 20px), 72px);
+    }
+
+    .breaking-news-ticker__segment {
+      font-size: var(--ticker-mobile-font-size);
+      padding-inline-end: 40px;
+    }
+
+    .breaking-news-ticker__viewport {
+      padding-inline: 16px;
+    }
+  }
+</style>
+
+<div id="breaking-news-ticker" class="breaking-news-ticker" hidden>
+  <div class="breaking-news-ticker__viewport">
+    <div id="breaking-news-ticker-track" class="breaking-news-ticker__track">
+      <span id="breaking-news-ticker-segment-a" class="breaking-news-ticker__segment"></span>
+      <span id="breaking-news-ticker-segment-b" class="breaking-news-ticker__segment" aria-hidden="true"></span>
+    </div>
+  </div>
+</div>
+
+<script>
+  (function () {
+    const feedUrl = "{% url 'breaking_news_ticker_feed' %}";
+    const ticker = document.getElementById("breaking-news-ticker");
+    const track = document.getElementById("breaking-news-ticker-track");
+    const segmentA = document.getElementById("breaking-news-ticker-segment-a");
+    const segmentB = document.getElementById("breaking-news-ticker-segment-b");
+    const speedPixelsPerSecond = Math.max(
+      20,
+      Math.min(400, Number("{{ breaking_news_ticker_config.scroll_speed|default:110 }}") || 110),
+    );
+    if (!ticker || !track || !segmentA || !segmentB) return;
+
+    function hideTicker() {
+      ticker.hidden = true;
+      track.classList.remove("is-running");
+      segmentA.textContent = "";
+      segmentB.textContent = "";
+    }
+
+    function showTicker(items) {
+      const normalized = (items || []).map((item) => String(item || "").trim()).filter(Boolean);
+      if (!normalized.length) {
+        hideTicker();
+        return;
+      }
+
+      const message = normalized.join("  •  ");
+      const repeatedMessage = `${message}  •  `;
+      segmentA.textContent = repeatedMessage;
+      segmentB.textContent = repeatedMessage;
+      ticker.hidden = false;
+      const durationSeconds = Math.max(
+        8,
+        Math.min(240, segmentA.scrollWidth / speedPixelsPerSecond || 24),
+      );
+      track.style.setProperty("--ticker-duration", `${durationSeconds}s`);
+      track.classList.remove("is-running");
+      void track.offsetWidth;
+      track.classList.add("is-running");
+    }
+
+    fetch(feedUrl, { cache: "no-store" })
+      .then((response) => {
+        if (!response.ok) throw new Error(`Ticker HTTP ${response.status}`);
+        return response.json();
+      })
+      .then((payload) => {
+        if (!payload || payload.enabled !== true) {
+          hideTicker();
+          return;
+        }
+        showTicker(payload.items || []);
+      })
+      .catch((error) => {
+        console.error("Unable to load breaking news ticker:", error);
+        hideTicker();
+      });
+  })();
+</script>
+{% endif %}

@@ -1,0 +1,16 @@
+{% load static %}
+{% if user.is_superuser %}
+<section class="software-updates" aria-labelledby="software-update-title"
+         data-check-url="{% url 'update_check' %}" data-install-url="{% url 'update_install' %}">
+  <h2 id="software-update-title">Software Updates</h2>
+  <p class="update-status" role="status">Checking GitHub...</p>
+  <p class="update-detail"></p>
+  <form class="update-controls" method="post">
+    {% csrf_token %}
+    <button type="button" class="update-check">Check for updates</button>
+    <button type="submit" class="update-install" hidden>Install update</button>
+  </form>
+</section>
+<link rel="stylesheet" href="{% static 'css/software_updates.css' %}">
+<script src="{% static 'js/software_updates.js' %}" defer></script>
+{% endif %}

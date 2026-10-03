@@ -1,0 +1,8 @@
+.software-updates { margin: 24px 0; padding: 24px 0; border-top: 1px solid #d7dfdc; border-bottom: 1px solid #d7dfdc; }
+.software-updates h2 { color: var(--brand); font-size: 24px; margin: 0 0 16px; }
+.software-updates p { overflow-wrap: anywhere; }
+.software-updates .update-detail { color: #52615a; }
+.software-updates .update-controls { display: flex; gap: 12px; flex-wrap: wrap; }
+.software-updates button { padding: 10px 16px; min-height: 44px; border: 1px solid var(--brand); background: white; color: var(--brand); border-radius: 4px; cursor: pointer; }
+.software-updates .update-install { color: white; background: var(--brand); }
+.software-updates button:disabled { opacity: .55; cursor: wait; }

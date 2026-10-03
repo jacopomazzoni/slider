@@ -1,0 +1,34 @@
+# Private configuration and runtime content (never publish).
+.env
+.env.*
+!.env.example
+.secret_key
+data/
+media/
+logs/
+emails/
+backups/
+updates/
+*.sqlite3*
+*.db
+*.zip
+*.pem
+*.key
+templates/dateline_announcements.json
+celerybeat-schedule*
+*.pid
+*.log
+
+# Generated output and local environments; source static assets stay tracked.
+/static/
+.venv*/
+venv/
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.mypy_cache/
+.coverage
+htmlcov/
+.DS_Store
+py311_probe.txt
+README 2.md

@@ -1,0 +1,780 @@
+{% load static rich_text_tags %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Display</title>
+    <script src="{% static 'js/responsive_qr.js' %}?v=2" defer></script>
+
+    <!-- THIS NEEDS A NEW SOLUTION -->
+   <!-- <meta http-equiv="refresh" content="23; url={% url 'dateline' %}"/> -->
+    
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap');
+        
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+        
+        body, html {
+            background: black;
+            overflow: hidden;
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+        }
+
+        html.cursor-hidden,
+        html.cursor-hidden * {
+            cursor: none !important;
+        }
+
+        .slideshow-container {
+            width: 100%;
+            height: 100vh;
+            position: relative;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            overflow: hidden;
+        }
+        
+        .mySlides {
+            width: 100%;
+            height: 100%;
+            position: absolute;
+            inset: 0;
+            justify-content: center;
+            align-items: center;
+            display: flex;
+            opacity: 0;
+            visibility: hidden;
+            z-index: 0;
+            transition: opacity 900ms ease;
+        }
+        
+        .mySlides.active,
+        .mySlides.incoming,
+        .mySlides.outgoing {
+            visibility: visible;
+        }
+
+        .mySlides.active {
+            opacity: 1;
+            z-index: 2;
+        }
+
+        .mySlides.incoming {
+            opacity: 1;
+            z-index: 3;
+        }
+
+        .mySlides.outgoing {
+            opacity: 0;
+            z-index: 2;
+        }
+
+        .transition-curtain {
+            position: absolute;
+            inset: 0;
+            opacity: 0;
+            pointer-events: none;
+            z-index: 10;
+            transition: opacity 450ms ease;
+        }
+
+        .transition-curtain.visible {
+            opacity: 1;
+        }
+        
+        /* Image slide styles */
+        img.fullscreen-image {
+            position: absolute;
+            inset: 0;
+            display: block;
+            width: 100%;
+            height: 100%;
+            object-fit: contain;
+            object-position: center center;
+        }
+
+        img.fullscreen-image.fullscreen-image-fill {
+            object-fit: cover;
+        }
+
+        video.fullscreen-video {
+            width: 100%;
+            height: 100%;
+            object-fit: contain;
+            background: black;
+        }
+        
+        /* Custom content slide styles */
+        .custom-slide {
+            width: 100%;
+            height: 100%;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            padding: 60px;
+            background: #0F172A;
+            color: #F8FAFC;
+        }
+        
+        .custom-slide-title {
+            font-size: 64px;
+            font-weight: 700;
+            margin-bottom: 40px;
+            text-align: center;
+            color: inherit;
+        }
+        
+        .custom-slide-description {
+            font-size: 32px;
+            line-height: 1.6;
+            max-width: 1200px;
+            text-align: center;
+            margin-bottom: 40px;
+        }
+        
+        .custom-slide-description p {
+            margin-bottom: 20px;
+        }
+        
+        .custom-slide-description ul,
+        .custom-slide-description ol {
+            text-align: left;
+            display: inline-block;
+            margin: 20px 0;
+        }
+        
+        .custom-slide-description li {
+            margin: 10px 0;
+        }
+        
+        .custom-slide-description strong {
+            color: inherit;
+        }
+        
+        .custom-slide-link {
+            display: inline-block;
+            padding: 20px 40px;
+            background: white;
+            color: #005A43;
+            text-decoration: none;
+            border-radius: 8px;
+            font-size: 24px;
+            font-weight: 600;
+            transition: all 0.3s;
+            margin-top: 20px;
+        }
+        
+        .custom-slide-link:hover {
+            transform: scale(1.05);
+            box-shadow: 0 10px 30px rgba(255,255,255,0.3);
+        }
+
+        .html-slide-shell {
+            width: 100%;
+            height: 100%;
+            background: #ffffff;
+        }
+
+        .html-slide-frame {
+            width: 100%;
+            height: 100%;
+            border: 0;
+            display: block;
+            background: white;
+        }
+
+        .youtube-slide-shell {
+            width: 100%;
+            height: 100%;
+            background: #000000;
+        }
+
+        .youtube-slide-frame {
+            width: 100%;
+            height: 100%;
+            border: 0;
+            display: block;
+            background: black;
+        }
+
+        .google-slides-shell {
+            width: 100%;
+            height: 100%;
+            background: #000000;
+        }
+
+        .google-slides-frame {
+            width: 100%;
+            height: 100%;
+            border: 0;
+            display: block;
+            background: #000000;
+        }
+        
+        .no-image {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            font-size: 24px;
+            color: white;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="slideshow-container">
+        {% if posts %}
+            {% for post in posts %}
+                <div class="mySlides" data-duration-seconds="{{ post.duration_seconds|default:8 }}" data-transition-type="{{ post.transition_type|default:'crossfade' }}" data-renditions="{{ post.display_renditions_json|escapejs }}" data-preview-url="{{ post.preview_url }}" data-cover-url="{{ post.cover_media_url }}" aria-hidden="true">
+                    {% if post.content_type == 'image' and post.cover %}
+                        <!-- Image Slide -->
+                        <img
+                            src="{{ post.initial_display_url }}"
+                            {% if post.display_srcset %}srcset="{{ post.display_srcset }}" sizes="100vw"{% endif %}
+                            alt="{{ post.title }}"
+                            class="fullscreen-image{% if post.cover.name|lower|slice:'-4:' == '.gif' %} fullscreen-image-fill{% endif %}"
+                            decoding="async"
+                            draggable="false">
+                    {% elif post.content_type == 'video' and post.cover %}
+                        <!-- Video Slide -->
+                        <video src="{{ post.cover_media_url }}" class="fullscreen-video" muted playsinline preload="metadata" {% if post.preview_url %}poster="{{ post.preview_url }}"{% endif %}></video>
+                    {% elif post.content_type == 'youtube' and post.youtube_embed_url %}
+                        <div class="youtube-slide-shell" data-youtube-src="{{ post.youtube_embed_url }}">
+                            <iframe
+                                class="youtube-slide-frame"
+                                title="{{ post.title }}"
+                                allow="autoplay; encrypted-media; picture-in-picture"
+                                referrerpolicy="strict-origin-when-cross-origin">
+                            </iframe>
+                        </div>
+                    {% elif post.content_type == 'gslides' and post.google_slides_embed_url %}
+                        <div class="google-slides-shell" data-google-slides-src="{{ post.google_slides_embed_url }}">
+                            <iframe
+                                class="google-slides-frame"
+                                title="{{ post.title }}"
+                                allowfullscreen="true"
+                                mozallowfullscreen="true"
+                                webkitallowfullscreen="true"
+                                referrerpolicy="strict-origin-when-cross-origin">
+                            </iframe>
+                        </div>
+                    {% elif post.content_type == 'custom' %}
+                        <!-- Custom Content Slide -->
+                        <div class="custom-slide" style="color: {{ post.text_color|default:'#F8FAFC' }}; background: {{ post.background_color|default:'#0F172A' }};">
+                            <h1 class="custom-slide-title">{{ post.title }}</h1>
+                            {% if post.description %}
+                                <div class="custom-slide-description">
+                                    {{ post.description|rich_text }}
+                                </div>
+                            {% endif %}
+                            {% if post.link %}
+                                <a href="{{ post.link }}" target="_blank" class="custom-slide-link" style="color: {{ post.background_color|default:'#0F172A' }};">
+                                    Learn More →
+                                </a>
+                            {% endif %}
+                        </div>
+                    {% elif post.content_type == 'html' %}
+                        <div class="html-slide-shell" data-html-source-id="{{ post.html_source_element_id }}">
+                            <iframe class="html-slide-frame" sandbox="allow-scripts allow-forms allow-modals allow-popups allow-downloads allow-same-origin" referrerpolicy="no-referrer"></iframe>
+                        </div>
+                        {{ post.html_slide_document|json_script:post.html_source_element_id }}
+                    {% endif %}
+                </div>
+            {% endfor %}
+
+        {% else %}
+            {% if empty_display_mode == 'message' %}
+                <div class="no-image">
+                    No content uploaded yet.
+                </div>
+            {% endif %}
+        {% endif %}
+        <div id="transition-curtain" class="transition-curtain" aria-hidden="true"></div>
+    </div>
+    {% include "includes/breaking_news_ticker.html" %}
+
+    <script>
+        let cycleCount = 0;
+        let slideTimer = null;
+        let slideRunId = 0;
+        let currentSlide = null;
+        let currentSlidePosition = -1;
+        let transitionInProgress = false;
+        const CYCLES_BEFORE_REDIRECT = 1; // Number of complete cycles before redirecting
+        const DEFAULT_SLIDE_DURATION = 8000; // 8 seconds when a slide has no saved duration
+        const TRANSITION_DURATION = 900;
+        const CURTAIN_DURATION = TRANSITION_DURATION / 2;
+        const DATELINE_VISIBLE = {{ dateline_config.is_visible|yesno:"true,false" }};
+        const WEATHER_VISIBLE = {{ weather_config.is_visible|yesno:"true,false" }};
+        const CALENDAR_VISIBLE = {{ calendar_slide_available|yesno:"true,false" }};
+        const TRANSIT_VISIBLE = {{ transit_dashboard_available|yesno:"true,false" }};
+        const PAUSED_MODE = {{ paused_mode|yesno:"true,false" }};
+        const DATELINE_URL = "{% url 'dateline' %}";
+        const WEATHER_URL = "{% url 'weather_view' %}";
+        const CALENDAR_URL = "{% url 'calendar_view' %}";
+        const SLIDESHOW_URL = "{% url 'slidedisplay' %}";
+        const EMPTY_DISPLAY_AUTO_REDIRECT = {{ empty_display_auto_redirect|yesno:"true,false" }};
+        const COLOR_TRANSITIONS = {
+            fade_gray: "#7f7f7f",
+            fade_black: "#000000",
+            fade_white: "#ffffff",
+        };
+        const curtain = document.getElementById("transition-curtain");
+        const slides = Array.from(document.getElementsByClassName("mySlides"));
+        const preloadedImages = new Map();
+        const PRELOAD_IMAGE_LIMIT = 4;
+        const CURSOR_IDLE_MS = 10000;
+        const rootNode = document.documentElement;
+        let cursorHideTimer = null;
+        let lastPointerX = -1;
+        let lastPointerY = -1;
+
+        function wait(ms) {
+            return new Promise((resolve) => window.setTimeout(resolve, ms));
+        }
+
+        function hideCursor() {
+            rootNode.classList.add("cursor-hidden");
+        }
+
+        function scheduleCursorHide() {
+            window.clearTimeout(cursorHideTimer);
+            cursorHideTimer = window.setTimeout(hideCursor, CURSOR_IDLE_MS);
+        }
+
+        function handlePointerActivity(event) {
+            if (event && event.type === "pointermove") {
+                if (event.clientX === lastPointerX && event.clientY === lastPointerY) {
+                    return;
+                }
+                lastPointerX = event.clientX;
+                lastPointerY = event.clientY;
+            }
+
+            if (rootNode.classList.contains("cursor-hidden")) {
+                rootNode.classList.remove("cursor-hidden");
+            }
+            scheduleCursorHide();
+        }
+
+        function parseSlideRenditions(slide) {
+            if (!slide) return [];
+            if (slide._renditions) return slide._renditions;
+            try {
+                slide._renditions = JSON.parse(slide.dataset.renditions || "[]");
+            } catch (error) {
+                slide._renditions = [];
+            }
+            return slide._renditions;
+        }
+
+        function getTargetDisplayPixels() {
+            return {
+                width: Math.round(Math.max(window.innerWidth || 0, window.screen.width || 0)),
+                height: Math.round(Math.max(window.innerHeight || 0, window.screen.height || 0)),
+            };
+        }
+
+        function getRenderedImageTargetPixels(variants) {
+            const target = getTargetDisplayPixels();
+            const reference = variants.find((variant) => Number(variant.width || 0) > 0 && Number(variant.height || 0) > 0);
+            if (!reference) return target;
+
+            const imageAspect = Number(reference.width) / Number(reference.height);
+            const targetAspect = target.width / target.height;
+            if (!Number.isFinite(imageAspect) || imageAspect <= 0) return target;
+
+            if (targetAspect > imageAspect) {
+                return {
+                    width: Math.round(target.height * imageAspect),
+                    height: target.height,
+                };
+            }
+
+            return {
+                width: target.width,
+                height: Math.round(target.width / imageAspect),
+            };
+        }
+
+        function chooseBestVariant(slide) {
+            const variants = parseSlideRenditions(slide).filter((variant) => variant && variant.url);
+            if (!variants.length) return null;
+
+            const target = getRenderedImageTargetPixels(variants);
+            const largerVariants = variants.filter((variant) =>
+                Number(variant.width || 0) >= target.width && Number(variant.height || 0) >= target.height
+            );
+
+            if (largerVariants.length) {
+                largerVariants.sort((left, right) => {
+                    const leftPixels = Number(left.width || 0) * Number(left.height || 0);
+                    const rightPixels = Number(right.width || 0) * Number(right.height || 0);
+                    return leftPixels - rightPixels;
+                });
+                return largerVariants[0];
+            }
+
+            variants.sort((left, right) => {
+                const leftPixels = Number(left.width || 0) * Number(left.height || 0);
+                const rightPixels = Number(right.width || 0) * Number(right.height || 0);
+                return rightPixels - leftPixels;
+            });
+            return variants[0];
+        }
+
+        function trimPreloadCache(cache, limit, onEvict) {
+            while (cache.size > limit) {
+                const oldestKey = cache.keys().next().value;
+                const oldestValue = cache.get(oldestKey);
+                if (onEvict) {
+                    onEvict(oldestValue);
+                }
+                cache.delete(oldestKey);
+            }
+        }
+
+        function preloadImageVariant(url) {
+            if (!url || preloadedImages.has(url)) return;
+            const image = new Image();
+            image.decoding = "async";
+            image.src = url;
+            preloadedImages.set(url, image);
+            trimPreloadCache(preloadedImages, PRELOAD_IMAGE_LIMIT);
+        }
+
+        function prepareSlideMedia(slide) {
+            if (!slide) return;
+
+            const image = slide.querySelector("img.fullscreen-image");
+            if (image) {
+                const variant = chooseBestVariant(slide);
+                const fallbackImageUrl = parseSlideRenditions(slide).find((entry) => entry && entry.url)?.url || "";
+                const selectedUrl = variant ? variant.url : fallbackImageUrl;
+                if (selectedUrl && image.dataset.selectedUrl !== selectedUrl) {
+                    image.removeAttribute("srcset");
+                    image.removeAttribute("sizes");
+                    image.src = selectedUrl;
+                    image.dataset.selectedUrl = selectedUrl;
+                }
+            }
+
+            const video = slide.querySelector("video");
+            if (video) {
+                const fallbackVideoUrl = slide.dataset.coverUrl || parseSlideRenditions(slide).find((variant) => variant && variant.url)?.url;
+                if (fallbackVideoUrl && video.dataset.selectedUrl !== fallbackVideoUrl) {
+                    video.pause();
+                    video.removeAttribute("src");
+                    video.load();
+                    video.src = fallbackVideoUrl;
+                    video.preload = "metadata";
+                    video.dataset.selectedUrl = fallbackVideoUrl;
+                    video.load();
+                }
+                if (slide.dataset.previewUrl && !video.poster) {
+                    video.poster = slide.dataset.previewUrl;
+                }
+            }
+        }
+
+        function preloadUpcomingSlides() {
+            if (slides.length < 2 || currentSlidePosition < 0) return;
+            for (let offset = 1; offset <= Math.min(slides.length - 1, 2); offset += 1) {
+                const slide = slides[(currentSlidePosition + offset) % slides.length];
+                const variant = chooseBestVariant(slide);
+                if (!variant) continue;
+                if (slide.querySelector("img.fullscreen-image")) {
+                    preloadImageVariant(variant.url);
+                }
+            }
+        }
+
+        function goToNextSource() {
+            if (DATELINE_VISIBLE) {
+                window.location.href = DATELINE_URL;
+                return;
+            }
+            if (WEATHER_VISIBLE) {
+                window.location.href = WEATHER_URL;
+                return;
+            }
+            if (CALENDAR_VISIBLE) {
+                window.location.href = CALENDAR_URL;
+                return;
+            }
+            window.location.href = TRANSIT_VISIBLE ? "{% url 'transit_view' %}" : SLIDESHOW_URL;
+        }
+
+        function scheduleNextSlide(delay, runId) {
+            window.clearTimeout(slideTimer);
+            slideTimer = window.setTimeout(() => {
+                if (runId !== slideRunId || transitionInProgress) return;
+                advanceSlides();
+            }, delay);
+        }
+
+        function pauseVideo(slide) {
+            const video = slide?.querySelector("video");
+            if (!video) return;
+            try {
+                video.pause();
+            } catch (error) {
+                // Ignore pause failures on videos without loaded metadata.
+            }
+        }
+
+        function resetVideo(slide) {
+            const video = slide?.querySelector("video");
+            if (!video) return;
+            try {
+                video.pause();
+                video.currentTime = 0;
+            } catch (error) {
+                // Ignore reset failures on videos without loaded metadata.
+            }
+        }
+
+        function mountHtmlSlide(slide) {
+            const frame = slide?.querySelector(".html-slide-frame");
+            const shell = slide?.querySelector(".html-slide-shell");
+            const sourceId = shell?.dataset.htmlSourceId;
+            const source = sourceId ? document.getElementById(sourceId) : null;
+            if (!frame || !source || frame.dataset.loaded === "true") return;
+            try {
+                frame.srcdoc = JSON.parse(source.textContent || "\"\"");
+            } catch (error) {
+                frame.srcdoc = "";
+            }
+            frame.dataset.loaded = "true";
+        }
+
+        function unmountHtmlSlide(slide) {
+            const frame = slide?.querySelector(".html-slide-frame");
+            if (!frame || frame.dataset.loaded !== "true") return;
+            frame.srcdoc = "";
+            frame.dataset.loaded = "false";
+        }
+
+        function mountYouTubeSlide(slide) {
+            const shell = slide?.querySelector(".youtube-slide-shell");
+            const frame = slide?.querySelector(".youtube-slide-frame");
+            const source = shell?.dataset.youtubeSrc;
+            if (!shell || !frame || !source || frame.dataset.loaded === "true") return;
+            frame.src = source;
+            frame.dataset.loaded = "true";
+        }
+
+        function unmountYouTubeSlide(slide) {
+            const frame = slide?.querySelector(".youtube-slide-frame");
+            if (!frame || frame.dataset.loaded !== "true") return;
+            frame.src = "";
+            frame.dataset.loaded = "false";
+        }
+
+        function mountGoogleSlidesSlide(slide) {
+            const shell = slide?.querySelector(".google-slides-shell");
+            const frame = slide?.querySelector(".google-slides-frame");
+            const source = shell?.dataset.googleSlidesSrc;
+            if (!shell || !frame || !source || frame.dataset.loaded === "true") return;
+            frame.src = source;
+            frame.dataset.loaded = "true";
+        }
+
+        function unmountGoogleSlidesSlide(slide) {
+            const frame = slide?.querySelector(".google-slides-frame");
+            if (!frame || frame.dataset.loaded !== "true") return;
+            frame.src = "";
+            frame.dataset.loaded = "false";
+        }
+
+        function deactivateSlide(slide) {
+            if (!slide) return;
+            slide.classList.remove("active", "incoming", "outgoing");
+            slide.setAttribute("aria-hidden", "true");
+            resetVideo(slide);
+            unmountHtmlSlide(slide);
+            unmountGoogleSlidesSlide(slide);
+            unmountYouTubeSlide(slide);
+        }
+
+        function activateSlide(slide) {
+            if (!slide) return;
+            prepareSlideMedia(slide);
+            mountHtmlSlide(slide);
+            mountGoogleSlidesSlide(slide);
+            mountYouTubeSlide(slide);
+            slide.classList.remove("incoming", "outgoing");
+            slide.classList.add("active");
+            slide.setAttribute("aria-hidden", "false");
+        }
+
+        function resolveTargetSlidePosition(direction, manualNavigation) {
+            if (slides.length === 0) return null;
+            if (currentSlidePosition < 0) return 0;
+
+            if (direction < 0) {
+                return (currentSlidePosition - 1 + slides.length) % slides.length;
+            }
+
+            const nextPosition = currentSlidePosition + 1;
+            const wrapsToStart = nextPosition >= slides.length;
+
+            if (wrapsToStart) {
+                if (!manualNavigation) {
+                    cycleCount += 1;
+                    if (cycleCount >= CYCLES_BEFORE_REDIRECT) {
+                        return null;
+                    }
+                }
+                return 0;
+            }
+
+            return nextPosition;
+        }
+
+        async function performTransition(fromSlide, toSlide, transitionType) {
+            transitionInProgress = true;
+            pauseVideo(fromSlide);
+
+            if (transitionType === "crossfade") {
+                toSlide.classList.add("incoming");
+                toSlide.setAttribute("aria-hidden", "false");
+                fromSlide.classList.remove("active");
+                fromSlide.classList.add("outgoing");
+                await wait(TRANSITION_DURATION);
+                deactivateSlide(fromSlide);
+                activateSlide(toSlide);
+                transitionInProgress = false;
+                return;
+            }
+
+            curtain.style.background = COLOR_TRANSITIONS[transitionType] || COLOR_TRANSITIONS.fade_black;
+            curtain.classList.add("visible");
+            await wait(CURTAIN_DURATION);
+            deactivateSlide(fromSlide);
+            activateSlide(toSlide);
+            curtain.classList.remove("visible");
+            await wait(CURTAIN_DURATION);
+            transitionInProgress = false;
+        }
+
+        function startSlidePlayback(slide) {
+            slideRunId += 1;
+            const runId = slideRunId;
+            activateSlide(slide);
+            preloadUpcomingSlides();
+            const durationSeconds = Number(slide.dataset.durationSeconds);
+            const slideDuration = Number.isFinite(durationSeconds) && durationSeconds > 0
+                ? durationSeconds * 1000
+                : DEFAULT_SLIDE_DURATION;
+
+            const video = slide.querySelector("video");
+            if (PAUSED_MODE) {
+                if (video) video.play().catch(() => {});
+                return;
+            }
+            if (!video) {
+                scheduleNextSlide(slideDuration, runId);
+                return;
+            }
+
+            let advanced = false;
+            const advanceOnce = () => {
+                if (advanced || runId !== slideRunId || transitionInProgress) return;
+                advanced = true;
+                advanceSlides();
+            };
+
+            video.addEventListener("ended", advanceOnce, { once: true });
+            video.addEventListener("error", advanceOnce, { once: true });
+            const playPromise = video.play();
+            if (playPromise) {
+                playPromise.catch(() => {
+                    if (runId === slideRunId) {
+                        scheduleNextSlide(slideDuration, runId);
+                    }
+                });
+            }
+            scheduleNextSlide(slideDuration, runId);
+        }
+
+        async function advanceSlides(direction = 1, manualNavigation = false) {
+            if (PAUSED_MODE || transitionInProgress || slides.length === 0) return;
+
+            const nextSlidePosition = resolveTargetSlidePosition(direction, manualNavigation);
+            if (nextSlidePosition === null) {
+                goToNextSource();
+                return;
+            }
+
+            const nextSlide = slides[nextSlidePosition];
+
+            if (!currentSlide) {
+                currentSlidePosition = nextSlidePosition;
+                currentSlide = nextSlide;
+                startSlidePlayback(currentSlide);
+                return;
+            }
+
+            const transitionType = currentSlide.dataset.transitionType || "crossfade";
+            await performTransition(currentSlide, nextSlide, transitionType);
+            currentSlidePosition = nextSlidePosition;
+            currentSlide = nextSlide;
+            startSlidePlayback(currentSlide);
+        }
+
+        function handleKeyNavigation(event) {
+            if (PAUSED_MODE || event.defaultPrevented || event.altKey || event.ctrlKey || event.metaKey || event.shiftKey) {
+                return;
+            }
+
+            if (event.key !== "ArrowRight" && event.key !== "ArrowLeft") {
+                return;
+            }
+
+            event.preventDefault();
+            handlePointerActivity();
+            window.clearTimeout(slideTimer);
+
+            if (event.key === "ArrowRight") {
+                advanceSlides(1, true);
+                return;
+            }
+
+            advanceSlides(-1, true);
+        }
+
+        slides.forEach((slide) => deactivateSlide(slide));
+        window.addEventListener("pointermove", handlePointerActivity, { passive: true });
+        window.addEventListener("pointerdown", handlePointerActivity, { passive: true });
+        window.addEventListener("keydown", handleKeyNavigation);
+        scheduleCursorHide();
+
+        if (slides.length > 0) {
+            if (PAUSED_MODE) {
+                currentSlide = slides[0];
+                currentSlidePosition = 0;
+                startSlidePlayback(currentSlide);
+            } else {
+                advanceSlides();
+            }
+        } else if (EMPTY_DISPLAY_AUTO_REDIRECT && !PAUSED_MODE) {
+            window.setTimeout(goToNextSource, 5000);
+        }
+
+        window.addEventListener("beforeunload", () => {
+            window.removeEventListener("keydown", handleKeyNavigation);
+            window.clearTimeout(cursorHideTimer);
+            window.clearTimeout(slideTimer);
+        });
+    </script>
+</body>
+</html>

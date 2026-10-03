@@ -1,0 +1,537 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="theme-color" content="{{ site_appearance.theme_color|default:'#005A43' }}">
+  {% if site_appearance.favicon_url %}
+    <link rel="icon" href="{{ site_appearance.favicon_url }}">
+  {% endif %}
+  <title>{% block title %}sliderCMS{% endblock %}</title>
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap');
+
+    :root {
+      --brand: {{ site_appearance.theme_color|default:'#005A43' }};
+      --brand-dark: color-mix(in srgb, var(--brand) 78%, black);
+      --brand-soft: color-mix(in srgb, var(--brand) 12%, white);
+      --brand-faint: color-mix(in srgb, var(--brand) 6%, white);
+      --surface: #ffffff;
+      --surface-muted: #f8f9fa;
+      --page-bg: #f5f5f5;
+      --border: #dee2e6;
+      --text: #212529;
+      --muted: #6c757d;
+      --danger: #dc3545;
+      --shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      margin: 0;
+      min-height: 100vh;
+      background: var(--page-bg);
+      color: var(--text);
+      font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      position: relative;
+      isolation: isolate;
+      overflow-x: hidden;
+    }
+
+    body::before {
+      content: "";
+      position: fixed;
+      inset: 0;
+      width: 100%;
+      height: 100%;
+      opacity: 0.15;
+      pointer-events: none;
+      z-index: 0;
+      background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noiseFilter'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.65' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noiseFilter)'/%3E%3C/svg%3E");
+      background-repeat: repeat;
+      background-size: 180px 180px;
+    }
+
+    main {
+      min-height: 100vh;
+      position: relative;
+      z-index: 1;
+    }
+
+    .app-header {
+      background-color: var(--brand);
+      color: #f8f9fa;
+      padding: 24px 20px;
+      position: relative;
+      z-index: 10;
+    }
+
+    .header-inner {
+      max-width: 1200px;
+      margin: 0 auto;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 24px;
+    }
+
+    .brand-lockup {
+      display: flex;
+      align-items: center;
+      gap: 18px;
+      min-width: 0;
+    }
+
+    .brand-logo {
+      width: 72px;
+      height: 72px;
+      border-radius: 8px;
+      object-fit: contain;
+      background: rgba(255, 255, 255, 0.12);
+      padding: 8px;
+      flex: 0 0 auto;
+    }
+
+    .brand-copy {
+      min-width: 0;
+    }
+
+    .app-header h1 {
+      margin: 0 0 10px;
+      font-size: 40px;
+      font-weight: 700;
+      text-align: left;
+    }
+
+    .app-header p {
+      margin: 0;
+      color: #e8f5f1;
+      font-size: 16px;
+      line-height: 1.4;
+      text-align: left;
+    }
+
+    .accountbar {
+      background-color: #f0f0f0;
+      padding: 15px 20px;
+      color: var(--text);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 20px;
+      position: relative;
+      z-index: 40;
+    }
+
+    .desktop-nav {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-wrap: wrap;
+      gap: 12px 18px;
+      width: 100%;
+    }
+
+    .nav-link {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      color: var(--brand);
+      text-decoration: none;
+      font-size: 16px;
+      font-weight: 600;
+      padding: 8px 0;
+      transition: color 0.2s;
+    }
+
+    .nav-link:hover {
+      color: var(--brand-dark);
+    }
+
+    .nav-link-icon {
+      display: inline-flex;
+      width: 18px;
+      height: 18px;
+      align-items: center;
+      justify-content: center;
+      flex: 0 0 auto;
+    }
+
+    .nav-link-icon svg {
+      width: 100%;
+      height: 100%;
+    }
+
+    .mobile-nav {
+      display: none;
+      position: relative;
+      z-index: 60;
+    }
+
+    .dropdown {
+      display: flex;
+      align-items: center;
+      position: relative;
+      z-index: 70;
+    }
+
+    .dropdown-button {
+      background-color: transparent;
+      padding: 8px;
+      outline: none;
+      border: none;
+      cursor: pointer;
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+      width: 46px;
+      min-height: 40px;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .hamburger-line {
+      width: 30px;
+      height: 3px;
+      background-color: var(--text);
+      transition: background-color 0.2s;
+      border-radius: 2px;
+    }
+
+    .dropdown-button:hover .hamburger-line,
+    .dropdown-button:focus-visible .hamburger-line {
+      background-color: var(--brand);
+    }
+
+    .menu {
+      display: none;
+      position: absolute;
+      background-color: rgba(255, 255, 255, 0.98);
+      min-width: 220px;
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+      border-radius: 8px;
+      z-index: 2000;
+      right: 0;
+      top: calc(100% + 8px);
+      overflow: hidden;
+      border: 1px solid #e0e0e0;
+      backdrop-filter: blur(18px);
+      -webkit-backdrop-filter: blur(18px);
+    }
+
+    .menu.show {
+      display: block;
+    }
+
+    .menu a {
+      color: var(--text);
+      background: transparent;
+      padding: 14px 20px;
+      text-decoration: none;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      font-size: 16px;
+      transition: all 0.2s;
+      border-bottom: 1px solid #f0f0f0;
+    }
+
+    .menu a:last-child {
+      border-bottom: none;
+    }
+
+    .menu a:hover {
+      background-color: var(--brand-soft);
+      color: var(--brand);
+    }
+
+    @media (max-width: 760px) {
+      .header-inner,
+      .brand-lockup {
+        align-items: flex-start;
+      }
+
+      .header-inner {
+        flex-direction: column;
+      }
+
+      .brand-logo {
+        width: 56px;
+        height: 56px;
+      }
+
+      .app-header h1 {
+        font-size: 32px;
+      }
+
+      .accountbar {
+        justify-content: flex-end;
+      }
+
+      .desktop-nav {
+        display: none;
+      }
+
+      .mobile-nav {
+        display: flex;
+        align-items: center;
+      }
+    }
+
+    a {
+      color: var(--brand);
+    }
+
+    .auth-card {
+      max-width: 450px;
+      margin: 60px auto;
+      padding: 40px;
+      background: var(--surface-muted);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      box-shadow: var(--shadow);
+    }
+
+    .page-header {
+      margin: 0 0 40px;
+      text-align: center;
+    }
+
+    .page-title {
+      width: 100%;
+      margin: 0;
+      color: var(--brand);
+      font-size: 32px;
+      font-weight: 700;
+      line-height: 1.2;
+      text-align: center;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 12px;
+    }
+
+    .page-title svg {
+      flex: 0 0 auto;
+    }
+
+    .page-subtitle {
+      max-width: 720px;
+      margin: 12px auto 0;
+      color: var(--muted);
+      font-size: 16px;
+      line-height: 1.5;
+      text-align: center;
+    }
+
+    .auth-card .page-title {
+      margin-bottom: 24px;
+      font-size: 30px;
+    }
+
+    .auth-card h1,
+    .auth-card h2 {
+      color: var(--brand);
+      font-weight: 700;
+      margin: 0 0 24px;
+      text-align: center;
+    }
+
+    .auth-card p {
+      color: var(--text);
+      line-height: 1.5;
+      text-align: center;
+    }
+
+    .auth-card form p {
+      text-align: left;
+    }
+
+    .auth-card label {
+      display: block;
+      color: var(--brand);
+      font-weight: 600;
+      margin-bottom: 8px;
+    }
+
+    .auth-card input {
+      width: 100%;
+      padding: 12px;
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      background: white;
+      font: inherit;
+    }
+
+    .password-input-group {
+      display: flex;
+      align-items: stretch;
+      gap: 10px;
+    }
+
+    .password-input-group input {
+      flex: 1 1 auto;
+    }
+
+    .password-toggle-button {
+      flex: 0 0 auto;
+      min-width: 72px;
+      padding: 0 14px;
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      background: white;
+      color: var(--brand);
+      font: inherit;
+      font-weight: 600;
+      cursor: pointer;
+      transition: background 0.2s, border-color 0.2s;
+    }
+
+    .password-toggle-button:hover {
+      background: var(--surface-muted);
+      border-color: var(--brand);
+    }
+
+    .auth-card input:focus {
+      outline: none;
+      border-color: var(--brand);
+    }
+
+    .field-errors,
+    .auth-card .errorlist {
+      margin-top: 8px;
+      color: #721c24;
+      font-size: 13px;
+      line-height: 1.45;
+    }
+
+    .field-errors ul,
+    .auth-card .errorlist {
+      margin: 0;
+      padding-left: 18px;
+    }
+
+    .ui-btn,
+    .auth-card button {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      min-height: 44px;
+      padding: 12px 24px;
+      background: var(--brand);
+      color: white;
+      border: 0;
+      border-radius: 6px;
+      font: inherit;
+      font-weight: 600;
+      text-decoration: none;
+      cursor: pointer;
+      transition: background 0.2s;
+    }
+
+    .ui-btn:hover,
+    .auth-card button:hover {
+      background: var(--brand-dark);
+    }
+
+    .auth-actions {
+      display: flex;
+      justify-content: center;
+      margin-top: 24px;
+    }
+
+    .auth-link {
+      display: block;
+      margin-top: 18px;
+      color: var(--muted);
+      font-size: 14px;
+      text-align: center;
+      text-decoration: none;
+    }
+
+    .auth-link:hover {
+      text-decoration: underline;
+    }
+  </style>
+  {% block extra_head %}{% endblock %}
+</head>
+<body>
+  {% block app_header %}
+    <header class="app-header">
+      <div class="header-inner">
+        <div class="brand-lockup">
+          {% if site_appearance.logo_url %}
+            <img src="{{ site_appearance.logo_url }}" alt="sliderCMS logo" class="brand-logo">
+          {% endif %}
+          <div class="brand-copy">
+            <h1>sliderCMS</h1>
+            <p>Content Management System for Digital Signage and Announcements</p>
+          </div>
+        </div>
+      </div>
+    </header>
+
+    <nav class="accountbar" aria-label="Account menu">
+      <div class="desktop-nav">
+        {% include "includes/account_menu_links.html" %}
+      </div>
+      <div class="mobile-nav">
+        <div class="dropdown">
+          <button class="dropdown-button" type="button" onclick="toggleMenu(event)" aria-label="Open menu" aria-expanded="false" aria-controls="dropdownMenu">
+            <span class="hamburger-line"></span>
+            <span class="hamburger-line"></span>
+            <span class="hamburger-line"></span>
+          </button>
+          <div class="menu" id="dropdownMenu">
+            {% include "includes/account_menu_links.html" %}
+          </div>
+        </div>
+      </div>
+    </nav>
+  {% endblock %}
+
+  <main>
+    {% block content %}
+    {% endblock %}
+  </main>
+
+  <script>
+    function toggleMenu(event) {
+      event.stopPropagation();
+      const menu = document.getElementById('dropdownMenu');
+      const button = event.currentTarget;
+      const isOpen = menu.classList.toggle('show');
+      button.setAttribute('aria-expanded', isOpen ? 'true' : 'false');
+    }
+
+    document.addEventListener('click', function(event) {
+      const menu = document.getElementById('dropdownMenu');
+      const button = document.querySelector('.dropdown-button');
+      const dropdown = event.target.closest('.dropdown');
+
+      if (menu && !dropdown && menu.classList.contains('show')) {
+        menu.classList.remove('show');
+        if (button) button.setAttribute('aria-expanded', 'false');
+      }
+    });
+
+    document.addEventListener('click', function(event) {
+      const toggle = event.target.closest('.password-toggle-button');
+      if (!toggle) return;
+
+      const targetId = toggle.getAttribute('data-target');
+      const input = targetId ? document.getElementById(targetId) : null;
+      if (!input) return;
+
+      const reveal = input.type === 'password';
+      input.type = reveal ? 'text' : 'password';
+      toggle.textContent = reveal ? 'Hide' : 'Show';
+      toggle.setAttribute('aria-pressed', reveal ? 'true' : 'false');
+    });
+  </script>
+  {% block scripts %}{% endblock %}
+</body>
+</html>

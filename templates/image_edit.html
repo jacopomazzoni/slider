@@ -1,0 +1,1083 @@
+{% extends "base.html" %}
+
+{% block title %}Edit Image{% endblock %}
+
+{% block content %}
+<style>
+  .image-editor-shell {
+    max-width: 1280px;
+    margin: 40px auto;
+    padding: 0 20px 48px;
+  }
+
+  .image-editor-layout {
+    display: grid;
+    grid-template-columns: minmax(0, 1.2fr) minmax(360px, 0.8fr);
+    gap: 24px;
+    align-items: start;
+  }
+
+  .editor-panel {
+    background: white;
+    border: 1px solid #dee2e6;
+    border-radius: 8px;
+    box-shadow: 0 2px 10px rgba(15, 23, 42, 0.08);
+    padding: 24px;
+  }
+
+  .editor-panel h2 {
+    margin: 0 0 10px;
+    color: var(--brand);
+    font-size: 22px;
+  }
+
+  .editor-copy {
+    margin: 0 0 18px;
+    color: #667085;
+    line-height: 1.55;
+  }
+
+  .preview-stage {
+    border: 1px solid #d0d5dd;
+    border-radius: 8px;
+    background: #101828;
+    padding: 14px;
+  }
+
+  .preview-frame {
+    position: relative;
+    overflow: hidden;
+    border-radius: 6px;
+    isolation: isolate;
+  }
+
+  .preview-stage canvas {
+    display: block;
+    width: 100%;
+    aspect-ratio: 16 / 9;
+    border-radius: 6px;
+    background: #0b1220;
+  }
+
+  .crop-box {
+    position: absolute;
+    border: 2px solid #ef4444;
+    border-radius: 6px;
+    pointer-events: none;
+    display: none;
+    z-index: 2;
+  }
+
+  .crop-box.is-visible {
+    display: block;
+  }
+
+  .crop-box.is-interactive {
+    pointer-events: auto;
+    cursor: move;
+  }
+
+  .crop-box:not(.is-interactive) .crop-handle {
+    display: none;
+  }
+
+  .crop-handle {
+    position: absolute;
+    width: 16px;
+    height: 16px;
+    border-radius: 999px;
+    background: #ef4444;
+    border: 2px solid white;
+    box-shadow: 0 0 0 1px rgba(0, 0, 0, 0.15);
+  }
+
+  .crop-handle[data-handle="nw"] {
+    top: -8px;
+    left: -8px;
+    cursor: nwse-resize;
+  }
+
+  .crop-handle[data-handle="ne"] {
+    top: -8px;
+    right: -8px;
+    cursor: nesw-resize;
+  }
+
+  .crop-handle[data-handle="sw"] {
+    bottom: -8px;
+    left: -8px;
+    cursor: nesw-resize;
+  }
+
+  .crop-handle[data-handle="se"] {
+    right: -8px;
+    bottom: -8px;
+    cursor: nwse-resize;
+  }
+
+  .preview-toolbar {
+    display: flex;
+    gap: 12px;
+    flex-wrap: wrap;
+    align-items: center;
+    margin-top: 16px;
+  }
+
+  .crop-summary {
+    color: #667085;
+    font-size: 13px;
+    line-height: 1.45;
+  }
+
+  .preview-footnote {
+    margin-top: 14px;
+    color: #667085;
+    font-size: 13px;
+    line-height: 1.5;
+  }
+
+  .current-thumb {
+    margin-top: 16px;
+    display: grid;
+    gap: 10px;
+  }
+
+  .current-thumb img {
+    width: 250px;
+    max-width: 100%;
+    border-radius: 8px;
+    border: 1px solid #d0d5dd;
+    background: white;
+  }
+
+  .editor-form {
+    display: grid;
+    gap: 20px;
+  }
+
+  .editor-group {
+    display: grid;
+    gap: 12px;
+  }
+
+  .editor-group h3 {
+    margin: 0;
+    color: var(--brand);
+    font-size: 16px;
+  }
+
+  .editor-grid {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 16px;
+  }
+
+  .editor-field label {
+    display: block;
+    margin-bottom: 8px;
+    color: var(--brand);
+    font-weight: 700;
+    font-size: 14px;
+  }
+
+  .editor-field input[type="number"],
+  .editor-field select,
+  .editor-field textarea,
+  .editor-field input[type="color"] {
+    width: 100%;
+    padding: 11px 12px;
+    border: 1px solid #d0d5dd;
+    border-radius: 6px;
+    background: white;
+    font: inherit;
+  }
+
+  .editor-field input[type="color"] {
+    min-height: 48px;
+    padding: 4px;
+    cursor: pointer;
+  }
+
+  .editor-field input:focus,
+  .editor-field select:focus,
+  .editor-field textarea:focus {
+    outline: none;
+    border-color: var(--brand);
+    box-shadow: 0 0 0 3px color-mix(in srgb, var(--brand) 14%, white);
+  }
+
+  .editor-field textarea {
+    min-height: 104px;
+    resize: vertical;
+  }
+
+  .editor-slider {
+    width: 100%;
+    margin-top: 10px;
+    accent-color: var(--brand);
+  }
+
+  .editor-field-help {
+    margin-top: 8px;
+    color: #667085;
+    font-size: 12px;
+    line-height: 1.45;
+  }
+
+  .font-preview {
+    margin-top: 10px;
+    padding: 12px 14px;
+    border: 1px solid #d0d5dd;
+    border-radius: 6px;
+    background: #f8fafc;
+    color: #1f2937;
+    font-size: 16px;
+  }
+
+  .rotation-readout {
+    margin-top: 8px;
+    color: #667085;
+    font-size: 13px;
+    line-height: 1.45;
+  }
+
+  .editor-errors {
+    margin: 8px 0 0;
+    padding-left: 18px;
+    color: #b42318;
+    font-size: 13px;
+    line-height: 1.45;
+  }
+
+  .editor-actions {
+    display: flex;
+    gap: 12px;
+    flex-wrap: wrap;
+    margin-top: 6px;
+  }
+
+  .primary-action,
+  .secondary-action,
+  .danger-action {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 44px;
+    padding: 10px 18px;
+    border-radius: 6px;
+    font-weight: 700;
+    font-size: 14px;
+    text-decoration: none;
+    cursor: pointer;
+  }
+
+  .primary-action {
+    border: 0;
+    background: var(--brand);
+    color: white;
+  }
+
+  .secondary-action {
+    border: 1px solid #d0d5dd;
+    background: white;
+    color: var(--brand);
+  }
+
+  .secondary-action.is-active {
+    background: color-mix(in srgb, var(--brand) 12%, white);
+    border-color: color-mix(in srgb, var(--brand) 35%, #d0d5dd);
+  }
+
+  .danger-action {
+    border: 0;
+    background: #dc3545;
+    color: white;
+  }
+
+  .visually-hidden {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    padding: 0;
+    margin: -1px;
+    overflow: hidden;
+    clip: rect(0, 0, 0, 0);
+    white-space: nowrap;
+    border: 0;
+  }
+
+  .messages {
+    margin-bottom: 20px;
+  }
+
+  .alert {
+    padding: 12px 20px;
+    border-radius: 6px;
+    margin-bottom: 12px;
+  }
+
+  .alert-success {
+    background: #d4edda;
+    color: #155724;
+    border: 1px solid #c3e6cb;
+  }
+
+  .alert-error {
+    background: #f8d7da;
+    color: #721c24;
+    border: 1px solid #f5c6cb;
+  }
+
+  .processing-modal {
+    position: fixed;
+    inset: 0;
+    display: none;
+    align-items: center;
+    justify-content: center;
+    padding: 24px;
+    background: rgba(15, 23, 42, 0.48);
+    z-index: 1200;
+    backdrop-filter: blur(2px);
+  }
+
+  .processing-modal.is-visible {
+    display: flex;
+  }
+
+  .processing-modal-card {
+    width: min(92vw, 360px);
+    background: white;
+    border: 1px solid #d0d5dd;
+    border-radius: 10px;
+    box-shadow: 0 20px 48px rgba(15, 23, 42, 0.22);
+    padding: 24px;
+    text-align: center;
+  }
+
+  .processing-spinner {
+    width: 38px;
+    height: 38px;
+    margin: 0 auto 16px;
+    border-radius: 999px;
+    border: 3px solid rgba(0, 90, 67, 0.16);
+    border-top-color: var(--brand);
+    animation: processing-spin 0.9s linear infinite;
+  }
+
+  .processing-title {
+    margin: 0 0 8px;
+    color: var(--brand);
+    font-size: 18px;
+    font-weight: 700;
+  }
+
+  .processing-copy {
+    margin: 0;
+    color: #667085;
+    line-height: 1.55;
+  }
+
+  @keyframes processing-spin {
+    to {
+      transform: rotate(360deg);
+    }
+  }
+
+  @media (max-width: 900px) {
+    .image-editor-layout,
+    .editor-grid {
+      grid-template-columns: 1fr;
+    }
+
+    .image-editor-shell {
+      margin-top: 28px;
+      padding: 0 16px 40px;
+    }
+  }
+</style>
+
+<div class="image-editor-shell">
+  {% if messages %}
+    <div class="messages">
+      {% for message in messages %}
+        <div class="alert alert-{{ message.tags }}">
+          {{ message }}
+        </div>
+      {% endfor %}
+    </div>
+  {% endif %}
+
+  <div class="page-header">
+    <h1 class="page-title">Edit Image</h1>
+    <p class="page-subtitle">{{ post.title }}. These edits affect the slideshow renditions and thumbnail preview only. The original upload is preserved.</p>
+  </div>
+
+  <div class="image-editor-layout">
+    <section class="editor-panel">
+      <h2>Preview</h2>
+      <p class="editor-copy">Use the rotation slider for fine control, then click <strong>Adjust Crop</strong> to drag and resize the red crop box directly on the preview.</p>
+
+      <div class="preview-stage">
+        <div class="preview-frame" id="image-editor-frame">
+          <canvas id="image-editor-canvas" width="1280" height="720" aria-label="Edited image preview"></canvas>
+          <div class="crop-box" id="image-editor-crop-box">
+            <div class="crop-handle" data-handle="nw"></div>
+            <div class="crop-handle" data-handle="ne"></div>
+            <div class="crop-handle" data-handle="sw"></div>
+            <div class="crop-handle" data-handle="se"></div>
+          </div>
+        </div>
+      </div>
+
+      <div class="preview-toolbar">
+        <button type="button" class="secondary-action" id="crop-tool-toggle" aria-pressed="false">Adjust Crop</button>
+        <button type="button" class="secondary-action" id="crop-reset">Reset Crop</button>
+        <div class="crop-summary" id="crop-summary">Crop: full image</div>
+      </div>
+
+      <div class="preview-footnote">
+        The live preview uses a lightweight source image for speed. Saved slideshow files are still rebuilt from the original upload whenever you save.
+      </div>
+
+      <div class="current-thumb">
+        <strong>Current slide-library thumbnail</strong>
+        {% if post.preview_url %}
+          <img src="{{ post.preview_url }}" alt="{{ post.title }} thumbnail preview">
+        {% endif %}
+      </div>
+    </section>
+
+    <section class="editor-panel">
+      <h2>Controls</h2>
+      <p class="editor-copy">Text is rendered after the crop is applied, so the preview draws it inside the crop region. Choose a font, adjust the size, and save when it feels right.</p>
+
+      <form method="post" class="editor-form">
+        {% csrf_token %}
+        {{ form.crop_left_percent }}
+        {{ form.crop_top_percent }}
+        {{ form.crop_width_percent }}
+        {{ form.crop_height_percent }}
+
+        <div class="editor-group">
+          <h3>Rotate</h3>
+          <div class="editor-field">
+            <label for="{{ form.rotation_degrees.id_for_label }}">Rotation (degrees)</label>
+            {{ form.rotation_degrees }}
+            <input class="editor-slider" id="rotation-slider" type="range" min="-180" max="180" step="0.5" value="{{ form.rotation_degrees.value|default:0 }}">
+            <div class="rotation-readout" id="rotation-readout">0°</div>
+            {% if form.rotation_degrees.errors %}
+              <ul class="editor-errors">{{ form.rotation_degrees.errors }}</ul>
+            {% endif %}
+          </div>
+        </div>
+
+        <div class="editor-group">
+          <h3>Crop</h3>
+          <p class="editor-field-help">Toggle the crop tool and drag inside the red box to move it. Pull the corner handles to resize it.</p>
+          {% if form.crop_left_percent.errors or form.crop_top_percent.errors or form.crop_width_percent.errors or form.crop_height_percent.errors %}
+            <ul class="editor-errors">
+              {{ form.crop_left_percent.errors }}
+              {{ form.crop_top_percent.errors }}
+              {{ form.crop_width_percent.errors }}
+              {{ form.crop_height_percent.errors }}
+            </ul>
+          {% endif %}
+        </div>
+
+        <div class="editor-group">
+          <h3>Text Overlay</h3>
+          <div class="editor-field">
+            <label for="{{ form.overlay_text.id_for_label }}">Overlay Text</label>
+            {{ form.overlay_text }}
+            <div class="editor-field-help">Leave blank if you do not want any text on the slideshow renditions.</div>
+            {% if form.overlay_text.errors %}
+              <ul class="editor-errors">{{ form.overlay_text.errors }}</ul>
+            {% endif %}
+          </div>
+
+          <div class="editor-grid">
+            <div class="editor-field">
+              <label for="{{ form.overlay_position.id_for_label }}">Position</label>
+              {{ form.overlay_position }}
+              {% if form.overlay_position.errors %}
+                <ul class="editor-errors">{{ form.overlay_position.errors }}</ul>
+              {% endif %}
+            </div>
+
+            <div class="editor-field">
+              <label for="{{ form.overlay_font_family.id_for_label }}">Font</label>
+              {{ form.overlay_font_family }}
+              {% if form.overlay_font_family.errors %}
+                <ul class="editor-errors">{{ form.overlay_font_family.errors }}</ul>
+              {% endif %}
+              <div class="font-preview" id="font-preview">Campus updates</div>
+            </div>
+
+            <div class="editor-field">
+              <label for="{{ form.overlay_text_color.id_for_label }}">Text Color</label>
+              {{ form.overlay_text_color }}
+              {% if form.overlay_text_color.errors %}
+                <ul class="editor-errors">{{ form.overlay_text_color.errors }}</ul>
+              {% endif %}
+            </div>
+
+            <div class="editor-field">
+              <label for="{{ form.overlay_size_percent.id_for_label }}">Text Size (%)</label>
+              {{ form.overlay_size_percent }}
+              <input class="editor-slider" id="overlay-size-slider" type="range" min="2" max="20" step="1" value="{{ form.overlay_size_percent.value|default:6 }}">
+              {% if form.overlay_size_percent.errors %}
+                <ul class="editor-errors">{{ form.overlay_size_percent.errors }}</ul>
+              {% endif %}
+            </div>
+          </div>
+        </div>
+
+        <div class="editor-actions">
+          <button type="submit" class="primary-action">Save Rendition Edits</button>
+          <a href="{% url 'manage_slides' %}" class="secondary-action">Back to Slide Library</a>
+        </div>
+      </form>
+
+      {% if post.has_image_edits %}
+        <form method="post" style="margin-top: 16px;" data-processing-form>
+          {% csrf_token %}
+          <input type="hidden" name="revert_image_edits" value="1">
+          <button type="submit" class="danger-action">Revert to Original Renditions</button>
+        </form>
+      {% endif %}
+    </section>
+  </div>
+</div>
+
+<div class="processing-modal" id="processing-modal" aria-hidden="true" role="alertdialog" aria-modal="true" aria-labelledby="processing-modal-title">
+  <div class="processing-modal-card">
+    <div class="processing-spinner" aria-hidden="true"></div>
+    <h2 class="processing-title" id="processing-modal-title">Images processing, please wait</h2>
+    <p class="processing-copy">The slideshow renditions and preview files are being rebuilt from the original upload.</p>
+  </div>
+</div>
+
+<script>
+  (function() {
+    const canvas = document.getElementById('image-editor-canvas');
+    const frame = document.getElementById('image-editor-frame');
+    const cropBox = document.getElementById('image-editor-crop-box');
+    const cropToggle = document.getElementById('crop-tool-toggle');
+    const cropReset = document.getElementById('crop-reset');
+    const cropSummary = document.getElementById('crop-summary');
+    const rotationSlider = document.getElementById('rotation-slider');
+    const overlaySizeSlider = document.getElementById('overlay-size-slider');
+    const rotationReadout = document.getElementById('rotation-readout');
+    const fontPreview = document.getElementById('font-preview');
+    const processingModal = document.getElementById('processing-modal');
+    const sourceUrl = "{{ post.image_editor_preview_url|escapejs }}";
+    const sourceImage = new Image();
+    sourceImage.decoding = 'async';
+    sourceImage.src = sourceUrl;
+
+    const fieldIds = [
+      '{{ form.rotation_degrees.id_for_label }}',
+      '{{ form.crop_left_percent.id_for_label }}',
+      '{{ form.crop_top_percent.id_for_label }}',
+      '{{ form.crop_width_percent.id_for_label }}',
+      '{{ form.crop_height_percent.id_for_label }}',
+      '{{ form.overlay_text.id_for_label }}',
+      '{{ form.overlay_position.id_for_label }}',
+      '{{ form.overlay_font_family.id_for_label }}',
+      '{{ form.overlay_text_color.id_for_label }}',
+      '{{ form.overlay_size_percent.id_for_label }}',
+    ];
+    const fields = Object.fromEntries(fieldIds.map((id) => [id, document.getElementById(id)]));
+
+    const fontPreviewMap = {
+      sans_bold: { family: '"DejaVu Sans", Verdana, Arial, sans-serif', weight: '700' },
+      sans: { family: '"DejaVu Sans", Verdana, Arial, sans-serif', weight: '500' },
+      serif: { family: '"DejaVu Serif", Georgia, "Times New Roman", serif', weight: '700' },
+      mono: { family: '"DejaVu Sans Mono", Menlo, Consolas, "Courier New", monospace', weight: '700' },
+    };
+
+    const MIN_CROP_PERCENT = 5;
+    let cropMode = false;
+    let previewState = null;
+    let dragState = null;
+
+    function clamp(value, min, max) {
+      return Math.min(max, Math.max(min, value));
+    }
+
+    function parseNumber(value, fallback) {
+      const normalized = typeof value === 'string' ? value.replace(',', '.').trim() : value;
+      const parsed = Number(normalized);
+      return Number.isFinite(parsed) ? parsed : fallback;
+    }
+
+    function formatDecimal(value, digits = 1) {
+      return Number(value).toFixed(digits).replace(/\.0+$/, '').replace(/(\.\d*[1-9])0+$/, '$1');
+    }
+
+    function fitCanvasToContainer() {
+      const rect = frame.getBoundingClientRect();
+      const targetWidth = Math.max(320, Math.round(rect.width));
+      const targetHeight = Math.round(targetWidth * 9 / 16);
+      const dpr = window.devicePixelRatio || 1;
+      canvas.width = Math.round(targetWidth * dpr);
+      canvas.height = Math.round(targetHeight * dpr);
+      canvas.style.height = `${targetHeight}px`;
+    }
+
+    function readCropState() {
+      const crop = {
+        left: clamp(parseNumber(fields['{{ form.crop_left_percent.id_for_label }}']?.value, 0), 0, 95),
+        top: clamp(parseNumber(fields['{{ form.crop_top_percent.id_for_label }}']?.value, 0), 0, 95),
+        width: clamp(parseNumber(fields['{{ form.crop_width_percent.id_for_label }}']?.value, 100), MIN_CROP_PERCENT, 100),
+        height: clamp(parseNumber(fields['{{ form.crop_height_percent.id_for_label }}']?.value, 100), MIN_CROP_PERCENT, 100),
+      };
+
+      crop.width = clamp(crop.width, MIN_CROP_PERCENT, 100 - crop.left);
+      crop.height = clamp(crop.height, MIN_CROP_PERCENT, 100 - crop.top);
+      return crop;
+    }
+
+    function isFullCrop(crop) {
+      return (
+        Math.abs(crop.left) < 0.05 &&
+        Math.abs(crop.top) < 0.05 &&
+        Math.abs(crop.width - 100) < 0.05 &&
+        Math.abs(crop.height - 100) < 0.05
+      );
+    }
+
+    function writeCropState(crop) {
+      const clamped = {
+        left: clamp(crop.left, 0, 95),
+        top: clamp(crop.top, 0, 95),
+        width: clamp(crop.width, MIN_CROP_PERCENT, 100),
+        height: clamp(crop.height, MIN_CROP_PERCENT, 100),
+      };
+      clamped.width = clamp(clamped.width, MIN_CROP_PERCENT, 100 - clamped.left);
+      clamped.height = clamp(clamped.height, MIN_CROP_PERCENT, 100 - clamped.top);
+
+      fields['{{ form.crop_left_percent.id_for_label }}'].value = formatDecimal(clamped.left, 2);
+      fields['{{ form.crop_top_percent.id_for_label }}'].value = formatDecimal(clamped.top, 2);
+      fields['{{ form.crop_width_percent.id_for_label }}'].value = formatDecimal(clamped.width, 2);
+      fields['{{ form.crop_height_percent.id_for_label }}'].value = formatDecimal(clamped.height, 2);
+
+      if (cropSummary) {
+        cropSummary.textContent = isFullCrop(clamped)
+          ? 'Crop: full image'
+          : `Crop: ${formatDecimal(clamped.width)}% × ${formatDecimal(clamped.height)}%, offset ${formatDecimal(clamped.left)}% / ${formatDecimal(clamped.top)}%`;
+      }
+
+      updateCropBox();
+      return clamped;
+    }
+
+    function syncRotationControls(changedValue) {
+      const value = clamp(parseNumber(changedValue, 0), -180, 180);
+      fields['{{ form.rotation_degrees.id_for_label }}'].value = formatDecimal(value, 2);
+      rotationSlider.value = String(value);
+      rotationReadout.textContent = `${formatDecimal(value)}°`;
+    }
+
+    function syncOverlaySizeControls(changedValue) {
+      const value = clamp(parseNumber(changedValue, 6), 2, 20);
+      fields['{{ form.overlay_size_percent.id_for_label }}'].value = Math.round(value);
+      overlaySizeSlider.value = String(Math.round(value));
+    }
+
+    function updateFontPreview() {
+      const fontKey = fields['{{ form.overlay_font_family.id_for_label }}']?.value || 'sans_bold';
+      const fontConfig = fontPreviewMap[fontKey] || fontPreviewMap.sans_bold;
+      const sampleText = (fields['{{ form.overlay_text.id_for_label }}']?.value || '').trim() || 'Campus updates';
+      fontPreview.textContent = sampleText;
+      fontPreview.style.fontFamily = fontConfig.family;
+      fontPreview.style.fontWeight = fontConfig.weight;
+      fontPreview.style.color = fields['{{ form.overlay_text_color.id_for_label }}']?.value || '#1F2937';
+    }
+
+    function createRotatedCanvas(image, degrees) {
+      const radians = degrees * Math.PI / 180;
+      const sourceWidth = image.naturalWidth;
+      const sourceHeight = image.naturalHeight;
+      const absCos = Math.abs(Math.cos(radians));
+      const absSin = Math.abs(Math.sin(radians));
+      const rotatedWidth = Math.max(1, Math.ceil((sourceWidth * absCos) + (sourceHeight * absSin)));
+      const rotatedHeight = Math.max(1, Math.ceil((sourceWidth * absSin) + (sourceHeight * absCos)));
+
+      const rotatedCanvas = document.createElement('canvas');
+      rotatedCanvas.width = rotatedWidth;
+      rotatedCanvas.height = rotatedHeight;
+      const rotatedContext = rotatedCanvas.getContext('2d');
+      rotatedContext.translate(rotatedWidth / 2, rotatedHeight / 2);
+      rotatedContext.rotate(radians);
+      rotatedContext.drawImage(image, -sourceWidth / 2, -sourceHeight / 2);
+      return rotatedCanvas;
+    }
+
+    function wrapText(ctx, text, maxWidth) {
+      const lines = [];
+      const paragraphs = String(text || '').split(/\n/);
+      paragraphs.forEach((paragraph) => {
+        const words = paragraph.split(/\s+/).filter(Boolean);
+        if (!words.length) {
+          lines.push('');
+          return;
+        }
+
+        let line = words.shift();
+        words.forEach((word) => {
+          const candidate = `${line} ${word}`;
+          if (ctx.measureText(candidate).width <= maxWidth) {
+            line = candidate;
+          } else {
+            lines.push(line);
+            line = word;
+          }
+        });
+        lines.push(line);
+      });
+      return lines;
+    }
+
+    function getCropRect() {
+      if (!previewState?.imageRect) {
+        return null;
+      }
+      const crop = readCropState();
+      return {
+        x: previewState.imageRect.x + (previewState.imageRect.width * crop.left / 100),
+        y: previewState.imageRect.y + (previewState.imageRect.height * crop.top / 100),
+        width: previewState.imageRect.width * crop.width / 100,
+        height: previewState.imageRect.height * crop.height / 100,
+      };
+    }
+
+    function updateCropBox() {
+      const cropRect = getCropRect();
+      const shouldShow = Boolean(cropRect) && cropMode;
+      cropBox.classList.toggle('is-visible', shouldShow);
+      cropBox.classList.toggle('is-interactive', cropMode);
+      cropToggle.classList.toggle('is-active', cropMode);
+      cropToggle.setAttribute('aria-pressed', cropMode ? 'true' : 'false');
+      cropToggle.textContent = cropMode ? 'Finish Crop' : 'Adjust Crop';
+
+      if (!shouldShow || !cropRect) {
+        return;
+      }
+
+      cropBox.style.left = `${cropRect.x}px`;
+      cropBox.style.top = `${cropRect.y}px`;
+      cropBox.style.width = `${cropRect.width}px`;
+      cropBox.style.height = `${cropRect.height}px`;
+    }
+
+    function getCropSourceRect(sourceWidth, sourceHeight, crop) {
+      const left = Math.round(sourceWidth * crop.left / 100);
+      const top = Math.round(sourceHeight * crop.top / 100);
+      const width = Math.max(1, Math.round(sourceWidth * crop.width / 100));
+      const height = Math.max(1, Math.round(sourceHeight * crop.height / 100));
+      return {
+        x: clamp(left, 0, Math.max(0, sourceWidth - 1)),
+        y: clamp(top, 0, Math.max(0, sourceHeight - 1)),
+        width: Math.min(width, sourceWidth - left),
+        height: Math.min(height, sourceHeight - top),
+      };
+    }
+
+    function drawTextPreview(ctx, cropRect) {
+      const overlayText = fields['{{ form.overlay_text.id_for_label }}']?.value || '';
+      if (!overlayText.trim()) {
+        return;
+      }
+
+      const overlayPosition = fields['{{ form.overlay_position.id_for_label }}']?.value || 'bottom_center';
+      const overlayColor = fields['{{ form.overlay_text_color.id_for_label }}']?.value || '#FFFFFF';
+      const overlaySize = clamp(parseNumber(fields['{{ form.overlay_size_percent.id_for_label }}']?.value, 6), 2, 20);
+      const fontKey = fields['{{ form.overlay_font_family.id_for_label }}']?.value || 'sans_bold';
+      const fontConfig = fontPreviewMap[fontKey] || fontPreviewMap.sans_bold;
+
+      const fontSize = Math.max(16, Math.round(Math.min(cropRect.width, cropRect.height) * (overlaySize / 100)));
+      const padding = Math.max(14, Math.round(fontSize * 0.45));
+      const maxTextWidth = Math.max(120, cropRect.width - (padding * 2));
+      ctx.font = `${fontConfig.weight} ${fontSize}px ${fontConfig.family}`;
+      ctx.textBaseline = 'top';
+
+      const lines = wrapText(ctx, overlayText, maxTextWidth);
+      const lineHeight = Math.round(fontSize * 1.16);
+      const textWidth = Math.max(...lines.map((line) => ctx.measureText(line).width), 0);
+      const textHeight = Math.max(lineHeight, lines.length * lineHeight);
+
+      let x = cropRect.x + padding;
+      let y = cropRect.y + padding;
+      const [vertical, horizontal = 'center'] = overlayPosition.split('_');
+
+      if (horizontal === 'center') {
+        x = cropRect.x + (cropRect.width - textWidth) / 2;
+      } else if (horizontal === 'right') {
+        x = cropRect.x + cropRect.width - textWidth - padding;
+      }
+
+      if (vertical === 'center') {
+        y = cropRect.y + (cropRect.height - textHeight) / 2;
+      } else if (vertical === 'bottom') {
+        y = cropRect.y + cropRect.height - textHeight - padding;
+      }
+
+      ctx.fillStyle = 'rgba(0, 0, 0, 0.56)';
+      ctx.fillRect(x - 12, y - 8, textWidth + 24, textHeight + 16);
+      ctx.fillStyle = overlayColor;
+      lines.forEach((line, index) => {
+        ctx.fillText(line, x, y + (index * lineHeight));
+      });
+    }
+
+    function renderPreview() {
+      if (!canvas || !sourceImage.complete || !sourceImage.naturalWidth) {
+        return;
+      }
+
+      fitCanvasToContainer();
+
+      const dpr = window.devicePixelRatio || 1;
+      const cssWidth = canvas.width / dpr;
+      const cssHeight = canvas.height / dpr;
+      const ctx = canvas.getContext('2d');
+
+      ctx.setTransform(1, 0, 0, 1, 0, 0);
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+      ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+      ctx.fillStyle = '#0B1220';
+      ctx.fillRect(0, 0, cssWidth, cssHeight);
+
+      const rotation = clamp(parseNumber(fields['{{ form.rotation_degrees.id_for_label }}']?.value, 0), -180, 180);
+      const rotatedCanvas = createRotatedCanvas(sourceImage, rotation);
+      const crop = readCropState();
+      const sourceRect = cropMode || isFullCrop(crop)
+        ? { x: 0, y: 0, width: rotatedCanvas.width, height: rotatedCanvas.height }
+        : getCropSourceRect(rotatedCanvas.width, rotatedCanvas.height, crop);
+      const fitScale = Math.min(cssWidth / sourceRect.width, cssHeight / sourceRect.height);
+      const drawWidth = sourceRect.width * fitScale;
+      const drawHeight = sourceRect.height * fitScale;
+      const drawX = (cssWidth - drawWidth) / 2;
+      const drawY = (cssHeight - drawHeight) / 2;
+
+      ctx.drawImage(
+        rotatedCanvas,
+        sourceRect.x,
+        sourceRect.y,
+        sourceRect.width,
+        sourceRect.height,
+        drawX,
+        drawY,
+        drawWidth,
+        drawHeight,
+      );
+
+      previewState = {
+        imageRect: cropMode
+          ? {
+              x: drawX,
+              y: drawY,
+              width: drawWidth,
+              height: drawHeight,
+            }
+          : null,
+      };
+
+      const cropRect = cropMode ? getCropRect() : null;
+      if (cropMode && cropRect) {
+        if (!isFullCrop(crop)) {
+          ctx.fillStyle = 'rgba(11, 18, 32, 0.35)';
+          ctx.fillRect(drawX, drawY, drawWidth, Math.max(0, cropRect.y - drawY));
+          ctx.fillRect(drawX, cropRect.y, Math.max(0, cropRect.x - drawX), cropRect.height);
+          ctx.fillRect(cropRect.x + cropRect.width, cropRect.y, Math.max(0, (drawX + drawWidth) - (cropRect.x + cropRect.width)), cropRect.height);
+          ctx.fillRect(drawX, cropRect.y + cropRect.height, drawWidth, Math.max(0, (drawY + drawHeight) - (cropRect.y + cropRect.height)));
+        }
+        drawTextPreview(ctx, cropRect);
+      } else {
+        drawTextPreview(ctx, {
+          x: drawX,
+          y: drawY,
+          width: drawWidth,
+          height: drawHeight,
+        });
+      }
+
+      updateCropBox();
+      updateFontPreview();
+      syncRotationControls(rotation);
+      syncOverlaySizeControls(fields['{{ form.overlay_size_percent.id_for_label }}']?.value);
+    }
+
+    function updateCropFromPointer(event) {
+      if (!dragState || !previewState?.imageRect) {
+        return;
+      }
+
+      const pointX = event.clientX - frame.getBoundingClientRect().left;
+      const pointY = event.clientY - frame.getBoundingClientRect().top;
+      const deltaXPercent = ((pointX - dragState.startPoint.x) / previewState.imageRect.width) * 100;
+      const deltaYPercent = ((pointY - dragState.startPoint.y) / previewState.imageRect.height) * 100;
+      const start = dragState.startCrop;
+
+      let nextCrop = { ...start };
+      if (dragState.mode === 'move') {
+        nextCrop.left = clamp(start.left + deltaXPercent, 0, 100 - start.width);
+        nextCrop.top = clamp(start.top + deltaYPercent, 0, 100 - start.height);
+      } else {
+        let left = start.left;
+        let top = start.top;
+        let right = start.left + start.width;
+        let bottom = start.top + start.height;
+
+        if (dragState.mode.includes('w')) {
+          left = clamp(start.left + deltaXPercent, 0, right - MIN_CROP_PERCENT);
+        }
+        if (dragState.mode.includes('e')) {
+          right = clamp((start.left + start.width) + deltaXPercent, left + MIN_CROP_PERCENT, 100);
+        }
+        if (dragState.mode.includes('n')) {
+          top = clamp(start.top + deltaYPercent, 0, bottom - MIN_CROP_PERCENT);
+        }
+        if (dragState.mode.includes('s')) {
+          bottom = clamp((start.top + start.height) + deltaYPercent, top + MIN_CROP_PERCENT, 100);
+        }
+
+        nextCrop = {
+          left,
+          top,
+          width: right - left,
+          height: bottom - top,
+        };
+      }
+
+      writeCropState(nextCrop);
+      renderPreview();
+    }
+
+    function beginCropInteraction(event) {
+      if (!cropMode || !previewState?.imageRect) {
+        return;
+      }
+
+      const handle = event.target.closest('[data-handle]');
+      dragState = {
+        mode: handle?.dataset.handle || 'move',
+        startPoint: {
+          x: event.clientX - frame.getBoundingClientRect().left,
+          y: event.clientY - frame.getBoundingClientRect().top,
+        },
+        startCrop: readCropState(),
+      };
+
+      cropBox.setPointerCapture?.(event.pointerId);
+      event.preventDefault();
+    }
+
+    function endCropInteraction(event) {
+      if (!dragState) {
+        return;
+      }
+      try {
+        cropBox.releasePointerCapture?.(event.pointerId);
+      } catch (error) {
+        // Ignore release errors from browsers that already cleared capture.
+      }
+      dragState = null;
+    }
+
+    cropToggle.addEventListener('click', () => {
+      cropMode = !cropMode;
+      dragState = null;
+      updateCropBox();
+      renderPreview();
+    });
+
+    cropReset.addEventListener('click', () => {
+      cropMode = false;
+      dragState = null;
+      writeCropState({ left: 0, top: 0, width: 100, height: 100 });
+      renderPreview();
+    });
+
+    cropBox.addEventListener('pointerdown', beginCropInteraction);
+    window.addEventListener('pointermove', updateCropFromPointer);
+    window.addEventListener('pointerup', endCropInteraction);
+    window.addEventListener('pointercancel', endCropInteraction);
+
+    rotationSlider.addEventListener('input', () => {
+      syncRotationControls(rotationSlider.value);
+      renderPreview();
+    });
+
+    fields['{{ form.rotation_degrees.id_for_label }}']?.addEventListener('input', () => {
+      syncRotationControls(fields['{{ form.rotation_degrees.id_for_label }}'].value);
+      renderPreview();
+    });
+
+    overlaySizeSlider.addEventListener('input', () => {
+      syncOverlaySizeControls(overlaySizeSlider.value);
+      renderPreview();
+    });
+
+    fields['{{ form.overlay_size_percent.id_for_label }}']?.addEventListener('input', () => {
+      syncOverlaySizeControls(fields['{{ form.overlay_size_percent.id_for_label }}'].value);
+      renderPreview();
+    });
+
+    [
+      '{{ form.overlay_text.id_for_label }}',
+      '{{ form.overlay_position.id_for_label }}',
+      '{{ form.overlay_font_family.id_for_label }}',
+      '{{ form.overlay_text_color.id_for_label }}',
+    ].forEach((id) => {
+      fields[id]?.addEventListener('input', renderPreview);
+      fields[id]?.addEventListener('change', renderPreview);
+    });
+
+    sourceImage.addEventListener('load', () => {
+      writeCropState(readCropState());
+      renderPreview();
+    });
+
+    window.addEventListener('resize', renderPreview);
+
+    syncRotationControls(fields['{{ form.rotation_degrees.id_for_label }}']?.value || 0);
+    syncOverlaySizeControls(fields['{{ form.overlay_size_percent.id_for_label }}']?.value || 6);
+    writeCropState(readCropState());
+    updateFontPreview();
+
+    if (sourceImage.complete) {
+      renderPreview();
+    }
+
+    function showProcessingModal() {
+      if (!processingModal) {
+        return;
+      }
+      processingModal.classList.add('is-visible');
+      processingModal.setAttribute('aria-hidden', 'false');
+    }
+
+    document.querySelectorAll('form[data-processing-form], form.editor-form').forEach((form) => {
+      form.setAttribute('data-processing-form', 'true');
+      form.addEventListener('submit', (event) => {
+        if (form.dataset.submitting === 'true') {
+          return;
+        }
+        if (typeof form.checkValidity === 'function' && !form.checkValidity()) {
+          form.reportValidity?.();
+          return;
+        }
+
+        event.preventDefault();
+        form.dataset.submitting = 'true';
+        showProcessingModal();
+        window.requestAnimationFrame(() => {
+          HTMLFormElement.prototype.submit.call(form);
+        });
+      });
+    });
+  })();
+</script>
+{% endblock %}

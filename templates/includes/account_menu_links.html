@@ -1,0 +1,10 @@
+{% load navigation_tags %}
+{% nav_items user as app_nav_items %}
+{% for item in app_nav_items %}
+  <a href="{{ item.url }}" class="nav-link">
+    <span class="nav-link-icon" aria-hidden="true">
+      {% include "includes/nav_icon.html" with icon=item.icon %}
+    </span>
+    <span>{{ item.label }}</span>
+  </a>
+{% endfor %}

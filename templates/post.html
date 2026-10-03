@@ -1,0 +1,928 @@
+{% extends "base.html" %}
+{% load static rich_text_tags %}
+
+{% block title %}{% if editing_rich_text %}Edit Rich Text{% else %}Add Slide{% endif %}{% endblock %}
+
+{% block content %}
+<style>
+  .studio-shell {
+    max-width: 980px;
+    margin: 40px auto;
+    padding: 0 20px 48px;
+  }
+
+  .studio-frame {
+    background: white;
+    border: 1px solid #dee2e6;
+    border-radius: 8px;
+    box-shadow: 0 2px 10px rgba(15, 23, 42, 0.08);
+    overflow: hidden;
+  }
+
+  .studio-tabs {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0;
+    padding: 10px;
+    background: #f4f7f6;
+    border-bottom: 1px solid #dee2e6;
+  }
+
+  .studio-tab {
+    appearance: none;
+    border: 0;
+    background: transparent;
+    color: #5f6f68;
+    font: inherit;
+    font-weight: 700;
+    padding: 12px 18px;
+    border-radius: 6px;
+    cursor: pointer;
+    transition: background 0.2s, color 0.2s;
+  }
+
+  .studio-tab[aria-selected="true"] {
+    background: var(--brand);
+    color: white;
+  }
+
+  .studio-panel {
+    display: none;
+    padding: 28px;
+  }
+
+  .studio-panel.is-active {
+    display: block;
+  }
+
+  .panel-head {
+    margin-bottom: 24px;
+  }
+
+  .panel-title {
+    margin: 0;
+    color: var(--brand);
+    font-size: 24px;
+    font-weight: 700;
+  }
+
+  .panel-copy {
+    margin: 10px 0 0;
+    color: #667085;
+    font-size: 15px;
+    line-height: 1.6;
+  }
+
+  .form-grid {
+    display: grid;
+    gap: 18px;
+  }
+
+  .form-row {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 16px;
+  }
+
+  .form-group label {
+    display: block;
+    margin-bottom: 8px;
+    color: var(--brand);
+    font-weight: 700;
+    font-size: 14px;
+  }
+
+  .form-group .inline-check {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    min-height: 46px;
+    padding: 12px 14px;
+    border: 1px solid #d0d5dd;
+    border-radius: 6px;
+    color: #344054;
+    font-weight: 600;
+  }
+
+  .inline-check input {
+    width: 18px;
+    height: 18px;
+    accent-color: var(--brand);
+  }
+
+  .form-group input[type="text"],
+  .form-group input[type="url"],
+  .form-group input[type="number"],
+  .form-group textarea,
+  .form-group select {
+    width: 100%;
+    padding: 12px 14px;
+    border: 1px solid #d0d5dd;
+    border-radius: 6px;
+    background: white;
+    font: inherit;
+    font-size: 14px;
+    transition: border-color 0.2s, box-shadow 0.2s;
+  }
+
+  .form-group input:focus,
+  .form-group textarea:focus,
+  .form-group select:focus {
+    outline: none;
+    border-color: var(--brand);
+    box-shadow: 0 0 0 3px color-mix(in srgb, var(--brand) 16%, transparent);
+  }
+
+  .form-group textarea {
+    min-height: 280px;
+    resize: vertical;
+    line-height: 1.55;
+  }
+
+  .dropzone-input {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+    clip: rect(0 0 0 0);
+    clip-path: inset(50%);
+    white-space: nowrap;
+  }
+
+  .dropzone {
+    min-height: 260px;
+    padding: 30px 26px;
+    border: 2px dashed #c1ccc7;
+    border-radius: 8px;
+    background: linear-gradient(180deg, #fbfdfc 0%, #f3f8f5 100%);
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    gap: 14px;
+    text-align: center;
+    transition: border-color 0.2s, background 0.2s, transform 0.2s;
+  }
+
+  .dropzone.is-dragover,
+  .dropzone:hover,
+  .dropzone:focus-within {
+    border-color: var(--brand);
+    background: color-mix(in srgb, var(--brand) 8%, white);
+    transform: translateY(-1px);
+  }
+
+  .dropzone-body {
+    display: grid;
+    justify-items: center;
+    gap: 12px;
+    max-width: 560px;
+  }
+
+  .dropzone-copy {
+    color: #344054;
+    font-size: 18px;
+    font-weight: 700;
+    line-height: 1.4;
+    max-width: 34ch;
+  }
+
+  .dropzone-hint,
+  .dropzone-file-name,
+  .field-help {
+    color: #667085;
+    font-size: 13px;
+    line-height: 1.5;
+  }
+
+  .dropzone-hint {
+    max-width: 54ch;
+  }
+
+  .dropzone-file-name {
+    color: var(--brand);
+    font-weight: 700;
+  }
+
+  .dropzone-actions {
+    display: grid;
+    gap: 10px;
+    justify-items: center;
+    margin-top: 6px;
+  }
+
+  .dropzone-button {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 46px;
+    min-width: 150px;
+    padding: 10px 20px;
+    border-radius: 6px;
+    background: var(--brand);
+    color: white;
+    font-weight: 700;
+  }
+
+  .editor-toolbar {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    padding: 10px;
+    border: 1px solid #d0d5dd;
+    border-bottom: 0;
+    border-radius: 6px 6px 0 0;
+    background: #f8faf9;
+  }
+  .qr-dialog { width: min(440px, calc(100% - 32px)); padding: 24px; border: 1px solid var(--border); border-radius: 8px; color: var(--text); }
+  .qr-dialog::backdrop { background: rgb(0 0 0 / 45%); }
+  .qr-dialog h2 { margin: 0 0 20px; }
+  .qr-dialog-actions { display: flex; justify-content: flex-end; gap: 12px; margin-top: 20px; }
+  .qr-dialog-actions button { min-height: 44px; padding: 8px 16px; }
+  #qr-error { color: var(--danger); }
+
+  .editor-toolbar button {
+    min-width: 40px;
+    min-height: 40px;
+    border: 1px solid #d0d5dd;
+    border-radius: 4px;
+    background: white;
+    color: var(--brand);
+    font: inherit;
+    font-weight: 700;
+    cursor: pointer;
+  }
+
+  .editor-toolbar button:hover,
+  .editor-toolbar button:focus-visible {
+    background: color-mix(in srgb, var(--brand) 10%, white);
+    border-color: var(--brand);
+    outline: none;
+  }
+
+  #rich-editor {
+    min-height: 280px;
+    padding: 14px;
+    border: 1px solid #d0d5dd;
+    border-radius: 0 0 6px 6px;
+    background: white;
+    overflow-y: auto;
+    line-height: 1.6;
+  }
+
+  #rich-editor:focus {
+    outline: none;
+    border-color: var(--brand);
+  }
+
+  #rich-editor:empty::before {
+    content: attr(data-placeholder);
+    color: #98a2b3;
+  }
+
+  .color-row {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 16px;
+  }
+
+  .color-swatch-input {
+    width: 100%;
+    min-height: 52px;
+    padding: 6px;
+    border: 1px solid #d0d5dd;
+    border-radius: 6px;
+    background: white;
+    cursor: pointer;
+  }
+
+  .preview-chip {
+    padding: 12px 14px;
+    border: 1px solid #d0d5dd;
+    border-radius: 6px;
+    font-size: 13px;
+    font-weight: 700;
+  }
+
+  .optional-badge {
+    display: inline-flex;
+    align-items: center;
+    padding: 2px 8px;
+    margin-left: 8px;
+    border-radius: 999px;
+    background: color-mix(in srgb, var(--brand) 12%, white);
+    color: var(--brand);
+    font-size: 12px;
+    font-weight: 700;
+  }
+
+  .btn-submit {
+    width: 100%;
+    min-height: 46px;
+    padding: 14px 18px;
+    border: 0;
+    border-radius: 6px;
+    background: var(--brand);
+    color: white;
+    font: inherit;
+    font-size: 16px;
+    font-weight: 700;
+    cursor: pointer;
+    transition: background 0.2s;
+  }
+
+  .btn-submit:hover {
+    background: var(--brand-dark);
+  }
+
+  .field-error-list {
+    margin: 8px 0 0;
+    padding-left: 18px;
+    color: #b42318;
+    font-size: 13px;
+    line-height: 1.5;
+  }
+
+  .messages {
+    margin-bottom: 20px;
+  }
+
+  .alert {
+    padding: 12px 20px;
+    border-radius: 6px;
+    margin-bottom: 15px;
+  }
+
+  .alert-success {
+    background: #d4edda;
+    color: #155724;
+    border: 1px solid #c3e6cb;
+  }
+
+  .alert-error {
+    background: #f8d7da;
+    color: #721c24;
+    border: 1px solid #f5c6cb;
+  }
+
+  .page-actions {
+    display: flex;
+    justify-content: center;
+    gap: 14px;
+    flex-wrap: wrap;
+    margin-top: 26px;
+  }
+
+  .page-actions a {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 44px;
+    padding: 11px 18px;
+    border-radius: 6px;
+    border: 1px solid var(--brand);
+    background: white;
+    color: var(--brand);
+    text-decoration: none;
+    font-weight: 700;
+  }
+
+  .page-actions a:hover {
+    background: color-mix(in srgb, var(--brand) 8%, white);
+  }
+
+  @media (max-width: 760px) {
+    .studio-shell {
+      margin-top: 28px;
+      padding: 0 16px 40px;
+    }
+
+    .studio-panel {
+      padding: 22px;
+    }
+
+    .form-row,
+    .color-row {
+      grid-template-columns: 1fr;
+    }
+  }
+</style>
+
+<div class="studio-shell" data-active-tab="{{ active_tab|default:'media' }}">
+  {% if messages %}
+    <div class="messages">
+      {% for message in messages %}
+        <div class="alert alert-{{ message.tags }}">
+          {{ message }}
+        </div>
+      {% endfor %}
+    </div>
+  {% endif %}
+
+  <div class="page-header">
+    <h1 class="page-title">{% if editing_rich_text %}Edit Rich Text{% else %}Add Slide{% endif %}</h1>
+    {% if not editing_rich_text %}<p class="page-subtitle">Pick a slide type, fill it out, and save it straight into the rotation.</p>{% endif %}
+  </div>
+
+  <div class="studio-frame">
+    {% if not editing_rich_text %}
+    <div class="studio-tabs" role="tablist" aria-label="Add slide types">
+      <button type="button" class="studio-tab" data-tab-target="media" role="tab" aria-selected="false">Media</button>
+      <button type="button" class="studio-tab" data-tab-target="rich" role="tab" aria-selected="false">Rich Text</button>
+      <button type="button" class="studio-tab" data-tab-target="youtube" role="tab" aria-selected="false">YouTube</button>
+      <button type="button" class="studio-tab" data-tab-target="gslides" role="tab" aria-selected="false">Google Slides</button>
+      <button type="button" class="studio-tab" data-tab-target="html" role="tab" aria-selected="false">Custom HTML</button>
+    </div>
+
+    <section class="studio-panel" data-tab-panel="media" role="tabpanel">
+      <div class="panel-head">
+        <h2 class="panel-title">Media Upload</h2>
+        <p class="panel-copy">Use this for images, PDFs, GIFs, and videos. The slideshow keeps a small thumbnail for previews and generates still-image renditions for common display sizes.</p>
+      </div>
+
+      <form method="post" enctype="multipart/form-data" class="form-grid">
+        {% csrf_token %}
+
+        <div class="form-group">
+          <label for="{{ media_form.title.id_for_label }}">Title</label>
+          {{ media_form.title }}
+          {% if media_form.title.errors %}
+            <ul class="field-error-list">{{ media_form.title.errors }}</ul>
+          {% endif %}
+        </div>
+
+        <div class="form-group">
+          <label for="{{ media_form.cover.id_for_label }}">File</label>
+          <input
+            class="dropzone-input"
+            type="file"
+            name="{{ media_form.cover.html_name }}"
+            id="{{ media_form.cover.id_for_label }}"
+            accept=".png,.jpg,.jpeg,.gif,.webp,.pdf,.mp4,.m4v,.mov,.webm,.ogv,image/*,video/*,application/pdf"
+            required>
+          <label class="dropzone" for="{{ media_form.cover.id_for_label }}" id="media-dropzone">
+            <span class="dropzone-body">
+              <span class="dropzone-copy">Choose the file for this slide.</span>
+              <span class="dropzone-hint">Drag and drop works too. Supported formats: PNG, JPG, JPEG, GIF, WEBP, PDF, MP4, M4V, MOV, WEBM, and OGV.</span>
+              <span class="dropzone-actions">
+                <span class="dropzone-button">Choose File</span>
+                <span class="dropzone-file-name" id="media-file-name">No file selected yet</span>
+              </span>
+            </span>
+          </label>
+          {% if media_form.cover.errors %}
+            <ul class="field-error-list">{{ media_form.cover.errors }}</ul>
+          {% endif %}
+        </div>
+
+        <div class="form-row">
+          <div class="form-group">
+            <label for="{{ media_form.duration_seconds.id_for_label }}">Duration (seconds)</label>
+            {{ media_form.duration_seconds }}
+            {% if media_form.duration_seconds.errors %}
+              <ul class="field-error-list">{{ media_form.duration_seconds.errors }}</ul>
+            {% endif %}
+          </div>
+          <div class="form-group">
+            <label for="{{ media_form.transition_type.id_for_label }}">Transition</label>
+            {{ media_form.transition_type }}
+            {% if media_form.transition_type.errors %}
+              <ul class="field-error-list">{{ media_form.transition_type.errors }}</ul>
+            {% endif %}
+          </div>
+        </div>
+
+        <button type="submit" name="image_submit" class="btn-submit">Save Media Slide</button>
+      </form>
+    </section>
+    {% endif %}
+
+    <section class="studio-panel{% if editing_rich_text %} is-active{% endif %}" data-tab-panel="rich" {% if not editing_rich_text %}role="tabpanel"{% endif %}>
+      <div class="panel-head">
+        <h2 class="panel-title">Rich Text</h2>
+        <p class="panel-copy">Compose a styled announcement with formatted text, an optional link, and custom text and background colors.</p>
+      </div>
+
+      <form method="post" id="rich-form" class="form-grid">
+        {% csrf_token %}
+
+        <div class="form-group">
+          <label for="{{ rich_text_form.title.id_for_label }}">Title</label>
+          {{ rich_text_form.title }}
+          {% if rich_text_form.title.errors %}
+            <ul class="field-error-list">{{ rich_text_form.title.errors }}</ul>
+          {% endif %}
+        </div>
+
+        <div class="form-group">
+          <label for="rich-editor">Body</label>
+          <div class="editor-toolbar" aria-label="Rich text formatting tools">
+            <button type="button" data-command="bold" aria-label="Bold"><strong>B</strong></button>
+            <button type="button" data-command="italic" aria-label="Italic"><em>I</em></button>
+            <button type="button" data-command="underline" aria-label="Underline"><u>U</u></button>
+            <button type="button" data-command="insertUnorderedList" aria-label="Bulleted list">•</button>
+            <button type="button" data-command="insertOrderedList" aria-label="Numbered list">1.</button>
+            <button type="button" id="insert-qr" aria-label="Insert QR code" title="Insert QR code"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M3 3h6v6H3zM15 3h6v6h-6zM3 15h6v6H3zM15 15h2v2h-2zM19 19h2v2h-2zM19 13h2v3M13 19v2h3"/></svg></button>
+          </div>
+          <div id="rich-editor" contenteditable="true" data-placeholder="Add your announcement copy here."></div>
+          <input type="hidden" name="{{ rich_text_form.description.html_name }}" id="{{ rich_text_form.description.id_for_label }}" value="{{ rich_text_form.description.value|default:'' }}">
+          <div class="field-help">Keep the on-screen message short and readable. The manage-slides preview will show only a very small snippet.</div>
+          {% if rich_text_form.description.errors %}
+            <ul class="field-error-list">{{ rich_text_form.description.errors }}</ul>
+          {% endif %}
+        </div>
+
+        <div class="form-group">
+          <label for="{{ rich_text_form.link.id_for_label }}">
+            Link
+            <span class="optional-badge">Optional</span>
+          </label>
+          {{ rich_text_form.link }}
+          {% if rich_text_form.link.errors %}
+            <ul class="field-error-list">{{ rich_text_form.link.errors }}</ul>
+          {% endif %}
+        </div>
+
+        <div class="color-row">
+          <div class="form-group">
+            <label for="{{ rich_text_form.text_color.id_for_label }}">Text Color</label>
+            <input class="color-swatch-input" type="color" name="{{ rich_text_form.text_color.html_name }}" id="{{ rich_text_form.text_color.id_for_label }}" value="{{ rich_text_form.text_color.value|default:'#F8FAFC' }}">
+            {% if rich_text_form.text_color.errors %}
+              <ul class="field-error-list">{{ rich_text_form.text_color.errors }}</ul>
+            {% endif %}
+          </div>
+          <div class="form-group">
+            <label for="{{ rich_text_form.background_color.id_for_label }}">Background Color</label>
+            <input class="color-swatch-input" type="color" name="{{ rich_text_form.background_color.html_name }}" id="{{ rich_text_form.background_color.id_for_label }}" value="{{ rich_text_form.background_color.value|default:'#0F172A' }}">
+            {% if rich_text_form.background_color.errors %}
+              <ul class="field-error-list">{{ rich_text_form.background_color.errors }}</ul>
+            {% endif %}
+          </div>
+        </div>
+
+        <div class="preview-chip" id="rich-color-preview">Rich text slides use these saved colors during playback.</div>
+
+        <div class="form-row">
+          <div class="form-group">
+            <label for="{{ rich_text_form.duration_seconds.id_for_label }}">Duration (seconds)</label>
+            {{ rich_text_form.duration_seconds }}
+            {% if rich_text_form.duration_seconds.errors %}
+              <ul class="field-error-list">{{ rich_text_form.duration_seconds.errors }}</ul>
+            {% endif %}
+          </div>
+          <div class="form-group">
+            <label for="{{ rich_text_form.transition_type.id_for_label }}">Transition</label>
+            {{ rich_text_form.transition_type }}
+            {% if rich_text_form.transition_type.errors %}
+              <ul class="field-error-list">{{ rich_text_form.transition_type.errors }}</ul>
+            {% endif %}
+          </div>
+        </div>
+
+        <button type="submit" name="rich_submit" class="btn-submit">{% if editing_rich_text %}Save Changes{% else %}Save Rich Text Slide{% endif %}</button>
+      </form>
+    </section>
+
+    {% if not editing_rich_text %}
+    <section class="studio-panel" data-tab-panel="youtube" role="tabpanel">
+      <div class="panel-head">
+        <h2 class="panel-title">YouTube</h2>
+        <p class="panel-copy">Paste a YouTube link and optionally trim it to a specific clip using start and end times in seconds.</p>
+      </div>
+
+      <form method="post" class="form-grid">
+        {% csrf_token %}
+
+        <div class="form-group">
+          <label for="{{ youtube_form.title.id_for_label }}">Title</label>
+          {{ youtube_form.title }}
+          {% if youtube_form.title.errors %}
+            <ul class="field-error-list">{{ youtube_form.title.errors }}</ul>
+          {% endif %}
+        </div>
+
+        <div class="form-group">
+          <label for="{{ youtube_form.youtube_url.id_for_label }}">YouTube URL</label>
+          {{ youtube_form.youtube_url }}
+          <div class="field-help">Works with standard watch links, `youtu.be` links, embedded links, and Shorts URLs.</div>
+          {% if youtube_form.youtube_url.errors %}
+            <ul class="field-error-list">{{ youtube_form.youtube_url.errors }}</ul>
+          {% endif %}
+        </div>
+
+        <div class="form-row">
+          <div class="form-group">
+            <label for="{{ youtube_form.youtube_start_seconds.id_for_label }}">Start Time (seconds)</label>
+            {{ youtube_form.youtube_start_seconds }}
+            {% if youtube_form.youtube_start_seconds.errors %}
+              <ul class="field-error-list">{{ youtube_form.youtube_start_seconds.errors }}</ul>
+            {% endif %}
+          </div>
+          <div class="form-group">
+            <label for="{{ youtube_form.youtube_end_seconds.id_for_label }}">End Time (seconds)</label>
+            {{ youtube_form.youtube_end_seconds }}
+            <div class="field-help">Leave blank to play from the start time until the slide advances.</div>
+            {% if youtube_form.youtube_end_seconds.errors %}
+              <ul class="field-error-list">{{ youtube_form.youtube_end_seconds.errors }}</ul>
+            {% endif %}
+          </div>
+        </div>
+
+        <div class="form-row">
+          <div class="form-group">
+            <label for="{{ youtube_form.youtube_quality.id_for_label }}">Desired Resolution</label>
+            {{ youtube_form.youtube_quality }}
+            <div class="field-help">YouTube may still adapt quality based on network and device limits.</div>
+            {% if youtube_form.youtube_quality.errors %}
+              <ul class="field-error-list">{{ youtube_form.youtube_quality.errors }}</ul>
+            {% endif %}
+          </div>
+          <div class="form-group">
+            <label for="{{ youtube_form.youtube_show_captions.id_for_label }}">Captions</label>
+            <label class="inline-check">
+              {{ youtube_form.youtube_show_captions }}
+              <span>Show captions when the video provides them</span>
+            </label>
+            {% if youtube_form.youtube_show_captions.errors %}
+              <ul class="field-error-list">{{ youtube_form.youtube_show_captions.errors }}</ul>
+            {% endif %}
+          </div>
+        </div>
+
+        <div class="form-row">
+          <div class="form-group">
+            <label for="{{ youtube_form.duration_seconds.id_for_label }}">Duration (seconds)</label>
+            {{ youtube_form.duration_seconds }}
+            {% if youtube_form.duration_seconds.errors %}
+              <ul class="field-error-list">{{ youtube_form.duration_seconds.errors }}</ul>
+            {% endif %}
+          </div>
+          <div class="form-group">
+            <label for="{{ youtube_form.transition_type.id_for_label }}">Transition</label>
+            {{ youtube_form.transition_type }}
+            {% if youtube_form.transition_type.errors %}
+              <ul class="field-error-list">{{ youtube_form.transition_type.errors }}</ul>
+            {% endif %}
+          </div>
+        </div>
+
+        <button type="submit" name="youtube_submit" class="btn-submit">Save YouTube Slide</button>
+      </form>
+    </section>
+
+    <section class="studio-panel" data-tab-panel="gslides" role="tabpanel">
+      <div class="panel-head">
+        <h2 class="panel-title">Google Slides</h2>
+        <p class="panel-copy">Paste a published Google Slides link, pick the slide range to show, and set how long each page stays on screen.</p>
+      </div>
+
+      <form method="post" class="form-grid">
+        {% csrf_token %}
+
+        <div class="form-group">
+          <label for="{{ google_slides_form.title.id_for_label }}">Title</label>
+          {{ google_slides_form.title }}
+          {% if google_slides_form.title.errors %}
+            <ul class="field-error-list">{{ google_slides_form.title.errors }}</ul>
+          {% endif %}
+        </div>
+
+        <div class="form-group">
+          <label for="{{ google_slides_form.google_slides_url.id_for_label }}">Google Slides URL</label>
+          {{ google_slides_form.google_slides_url }}
+          <div class="field-help">Use a public or published Google Slides link from `docs.google.com`. Published embed links are the most reliable.</div>
+          {% if google_slides_form.google_slides_url.errors %}
+            <ul class="field-error-list">{{ google_slides_form.google_slides_url.errors }}</ul>
+          {% endif %}
+        </div>
+
+        <div class="form-row">
+          <div class="form-group">
+            <label for="{{ google_slides_form.google_slides_start_slide.id_for_label }}">Start Slide</label>
+            {{ google_slides_form.google_slides_start_slide }}
+            {% if google_slides_form.google_slides_start_slide.errors %}
+              <ul class="field-error-list">{{ google_slides_form.google_slides_start_slide.errors }}</ul>
+            {% endif %}
+          </div>
+          <div class="form-group">
+            <label for="{{ google_slides_form.google_slides_end_slide.id_for_label }}">End Slide</label>
+            {{ google_slides_form.google_slides_end_slide }}
+            <div class="field-help">Use the same number as the start slide to show just one page.</div>
+            {% if google_slides_form.google_slides_end_slide.errors %}
+              <ul class="field-error-list">{{ google_slides_form.google_slides_end_slide.errors }}</ul>
+            {% endif %}
+          </div>
+        </div>
+
+        <div class="form-row">
+          <div class="form-group">
+            <label for="{{ google_slides_form.google_slides_advance_seconds.id_for_label }}">Seconds Per Page</label>
+            {{ google_slides_form.google_slides_advance_seconds }}
+            {% if google_slides_form.google_slides_advance_seconds.errors %}
+              <ul class="field-error-list">{{ google_slides_form.google_slides_advance_seconds.errors }}</ul>
+            {% endif %}
+          </div>
+          <div class="form-group">
+            <label for="{{ google_slides_form.transition_type.id_for_label }}">Transition</label>
+            {{ google_slides_form.transition_type }}
+            {% if google_slides_form.transition_type.errors %}
+              <ul class="field-error-list">{{ google_slides_form.transition_type.errors }}</ul>
+            {% endif %}
+          </div>
+        </div>
+
+        <div class="preview-chip" id="google-slides-duration-preview">This slide will stay on screen long enough to show the selected Google Slides range once.</div>
+
+        <button type="submit" name="google_slides_submit" class="btn-submit">Save Google Slides Slide</button>
+      </form>
+    </section>
+
+    <section class="studio-panel" data-tab-panel="html" role="tabpanel">
+      <div class="panel-head">
+        <h2 class="panel-title">Custom HTML</h2>
+        <p class="panel-copy">Paste raw HTML, CSS, and client-side JavaScript for a self-contained slide rendered in an isolated frame during playback.</p>
+      </div>
+
+      <form method="post" class="form-grid">
+        {% csrf_token %}
+
+        <div class="form-group">
+          <label for="{{ html_form.title.id_for_label }}">Title</label>
+          {{ html_form.title }}
+          {% if html_form.title.errors %}
+            <ul class="field-error-list">{{ html_form.title.errors }}</ul>
+          {% endif %}
+        </div>
+
+        <div class="form-group">
+          <label for="{{ html_form.description.id_for_label }}">HTML</label>
+          {{ html_form.description }}
+          <div class="field-help">Use this for custom embeds, dashboards, or fully custom layouts.</div>
+          {% if html_form.description.errors %}
+            <ul class="field-error-list">{{ html_form.description.errors }}</ul>
+          {% endif %}
+        </div>
+
+        <div class="form-row">
+          <div class="form-group">
+            <label for="{{ html_form.duration_seconds.id_for_label }}">Duration (seconds)</label>
+            {{ html_form.duration_seconds }}
+            {% if html_form.duration_seconds.errors %}
+              <ul class="field-error-list">{{ html_form.duration_seconds.errors }}</ul>
+            {% endif %}
+          </div>
+          <div class="form-group">
+            <label for="{{ html_form.transition_type.id_for_label }}">Transition</label>
+            {{ html_form.transition_type }}
+            {% if html_form.transition_type.errors %}
+              <ul class="field-error-list">{{ html_form.transition_type.errors }}</ul>
+            {% endif %}
+          </div>
+        </div>
+
+        <button type="submit" name="html_submit" class="btn-submit">Save Custom HTML Slide</button>
+      </form>
+    </section>
+    {% endif %}
+  </div>
+
+  <div class="page-actions">
+    <a href="{% url 'manage_slides' %}">Slide Library</a>
+    <a href="{% url 'home' %}">Home</a>
+  </div>
+</div>
+
+<dialog id="qr-dialog" class="qr-dialog" aria-labelledby="qr-dialog-title">
+  <form id="qr-insert-form" class="form-grid" data-url="{% url 'rich_text_qr' %}">
+    <h2 id="qr-dialog-title">Insert QR Code</h2>
+    <div class="form-group"><label for="qr-text">Text or URL</label><textarea id="qr-text" maxlength="512" rows="3" required></textarea></div>
+    <div class="form-group"><label for="qr-size">Size</label><select id="qr-size"><option value="128">Small (128 px)</option><option value="192" selected>Medium (192 px)</option><option value="256">Large (256 px)</option></select></div>
+    <p id="qr-error" role="alert" hidden></p>
+    <div class="qr-dialog-actions"><button type="button" id="qr-cancel">Cancel</button><button type="submit" id="qr-confirm" class="btn-submit">Insert QR</button></div>
+  </form>
+</dialog>
+<script src="{% static 'js/responsive_qr.js' %}?v=2" defer></script>
+<script src="{% static 'js/rich_text_qr.js' %}" defer></script>
+<script>
+  (function() {
+    const shell = document.querySelector('.studio-shell');
+    const activeTab = shell?.dataset.activeTab || 'media';
+    const tabButtons = Array.from(document.querySelectorAll('[data-tab-target]'));
+    const tabPanels = Array.from(document.querySelectorAll('[data-tab-panel]'));
+    const fileInput = document.getElementById('{{ media_form.cover.id_for_label }}');
+    const dropzone = document.getElementById('media-dropzone');
+    const fileName = document.getElementById('media-file-name');
+    const richForm = document.getElementById('rich-form');
+    const richEditor = document.getElementById('rich-editor');
+    const richTextarea = document.getElementById('{{ rich_text_form.description.id_for_label }}');
+    const richTextColor = document.getElementById('{{ rich_text_form.text_color.id_for_label }}');
+    const richBackgroundColor = document.getElementById('{{ rich_text_form.background_color.id_for_label }}');
+    const richColorPreview = document.getElementById('rich-color-preview');
+    const googleSlidesStart = document.getElementById('{{ google_slides_form.google_slides_start_slide.id_for_label }}');
+    const googleSlidesEnd = document.getElementById('{{ google_slides_form.google_slides_end_slide.id_for_label }}');
+    const googleSlidesAdvance = document.getElementById('{{ google_slides_form.google_slides_advance_seconds.id_for_label }}');
+    const googleSlidesDurationPreview = document.getElementById('google-slides-duration-preview');
+    const initialRichHtml = "{{ rich_text_form.description.value|default:''|rich_text|escapejs }}";
+
+    function activateTab(tabKey) {
+      tabButtons.forEach((button) => {
+        const isActive = button.dataset.tabTarget === tabKey;
+        button.setAttribute('aria-selected', isActive ? 'true' : 'false');
+      });
+      tabPanels.forEach((panel) => {
+        panel.classList.toggle('is-active', panel.dataset.tabPanel === tabKey);
+      });
+    }
+
+    tabButtons.forEach((button) => {
+      button.addEventListener('click', () => activateTab(button.dataset.tabTarget));
+    });
+    activateTab(activeTab);
+
+    function syncRichEditorToField() {
+      if (richTextarea) {
+        const content = richEditor.cloneNode(true);
+        content.querySelectorAll('[data-qr-text]').forEach(code => { code.textContent = 'QR code'; });
+        richTextarea.value = content.innerHTML;
+      }
+    }
+
+    function refreshRichColorPreview() {
+      if (!richColorPreview || !richTextColor || !richBackgroundColor) return;
+      richColorPreview.style.color = richTextColor.value || '#F8FAFC';
+      richColorPreview.style.backgroundColor = richBackgroundColor.value || '#0F172A';
+    }
+
+    if (richEditor && richTextarea) {
+      richEditor.innerHTML = initialRichHtml || '';
+      syncRichEditorToField();
+      richEditor.addEventListener('input', syncRichEditorToField);
+      document.querySelectorAll('.editor-toolbar button[data-command]').forEach((button) => {
+        button.addEventListener('click', () => {
+          richEditor.focus();
+          document.execCommand(button.dataset.command, false, null);
+          syncRichEditorToField();
+        });
+      });
+    }
+
+    if (richForm) {
+      richForm.addEventListener('submit', syncRichEditorToField);
+    }
+
+    [richTextColor, richBackgroundColor].forEach((input) => {
+      if (input) input.addEventListener('input', refreshRichColorPreview);
+    });
+    refreshRichColorPreview();
+
+    function refreshGoogleSlidesDurationPreview() {
+      if (!googleSlidesDurationPreview) return;
+      const start = Math.max(1, Number(googleSlidesStart?.value || 1));
+      const end = Math.max(start, Number(googleSlidesEnd?.value || start));
+      const secondsPerPage = Math.max(1, Number(googleSlidesAdvance?.value || 8));
+      const slideCount = (end - start) + 1;
+      const totalSeconds = slideCount * secondsPerPage;
+      const rangeLabel = start === end ? `slide ${start}` : `slides ${start}-${end}`;
+      googleSlidesDurationPreview.textContent = `This slide will show ${rangeLabel} at ${secondsPerPage} second${secondsPerPage === 1 ? '' : 's'} per page for a total of ${totalSeconds} second${totalSeconds === 1 ? '' : 's'}.`;
+    }
+
+    [googleSlidesStart, googleSlidesEnd, googleSlidesAdvance].forEach((input) => {
+      if (input) input.addEventListener('input', refreshGoogleSlidesDurationPreview);
+    });
+    refreshGoogleSlidesDurationPreview();
+
+    function updateFileName() {
+      if (!fileInput || !fileName) return;
+      fileName.textContent = fileInput.files.length ? fileInput.files[0].name : 'No file selected yet';
+    }
+
+    if (fileInput) {
+      fileInput.addEventListener('change', updateFileName);
+      updateFileName();
+    }
+
+    if (dropzone && fileInput) {
+      ['dragenter', 'dragover'].forEach((eventName) => {
+        dropzone.addEventListener(eventName, (event) => {
+          event.preventDefault();
+          dropzone.classList.add('is-dragover');
+        });
+      });
+
+      ['dragleave', 'dragend', 'drop'].forEach((eventName) => {
+        dropzone.addEventListener(eventName, (event) => {
+          event.preventDefault();
+          dropzone.classList.remove('is-dragover');
+        });
+      });
+
+      dropzone.addEventListener('drop', (event) => {
+        const files = event.dataTransfer?.files;
+        if (!files || !files.length) return;
+        fileInput.files = files;
+        updateFileName();
+      });
+    }
+  })();
+</script>
+{% endblock %}

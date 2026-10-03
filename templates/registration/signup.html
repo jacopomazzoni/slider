@@ -1,0 +1,137 @@
+{% extends "base.html" %}
+
+{% block title %}Sign Up{% endblock %}
+
+{% block content %}
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap');
+
+  .signup-card {
+    max-width: 450px;
+    margin: 60px auto;
+    padding: 40px;
+    background: #f8f9fa;
+    border-radius: 8px;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+    font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  }
+
+  .signup-field {
+    margin-bottom: 20px;
+  }
+
+  .signup-field label {
+    display: block;
+    margin-bottom: 8px;
+    color: #005A43;
+    font-weight: 600;
+  }
+
+  .signup-field input {
+    width: 100%;
+    padding: 12px;
+    border: 1px solid #dee2e6;
+    border-radius: 6px;
+    font-family: 'Inter', sans-serif;
+    font-size: 14px;
+    box-sizing: border-box;
+    background: white;
+  }
+
+  .signup-field input:focus {
+    outline: none;
+    border-color: #005A43;
+  }
+
+  .signup-errors {
+    color: #dc3545;
+    font-size: 13px;
+    margin-top: 6px;
+  }
+
+  .signup-actions {
+    text-align: center;
+    margin-top: 25px;
+    padding-top: 25px;
+    border-top: 1px solid #dee2e6;
+  }
+</style>
+
+<div class="signup-card">
+  <h1 class="page-title" style="margin-bottom: 30px;">
+    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="vertical-align: middle; margin-right: 8px;">
+      <path d="M16 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path>
+      <circle cx="8.5" cy="7" r="4"></circle>
+      <line x1="20" y1="8" x2="20" y2="14"></line>
+      <line x1="23" y1="11" x2="17" y2="11"></line>
+    </svg>
+    Sign Up
+  </h1>
+
+  <form method="post">
+    {% csrf_token %}
+
+    <div class="signup-field">
+      <label for="{{ form.email.id_for_label }}">Email</label>
+      {{ form.email }}
+      {% if form.email.errors %}
+        <div class="signup-errors">{{ form.email.errors }}</div>
+      {% endif %}
+    </div>
+
+    <div class="signup-field">
+      <label for="{{ form.username.id_for_label }}">Username</label>
+      {{ form.username }}
+      {% if form.username.errors %}
+        <div class="signup-errors">{{ form.username.errors }}</div>
+      {% endif %}
+    </div>
+
+    <div class="signup-field">
+      <label for="{{ form.password1.id_for_label }}">Password</label>
+      <div class="password-input-group">
+        {{ form.password1 }}
+        <button type="button" class="password-toggle-button" data-target="{{ form.password1.id_for_label }}" aria-pressed="false">Show</button>
+      </div>
+      {% if form.password1.errors %}
+        <div class="signup-errors">{{ form.password1.errors }}</div>
+      {% endif %}
+    </div>
+
+    <div class="signup-field">
+      <label for="{{ form.password2.id_for_label }}">Confirm Password</label>
+      <div class="password-input-group">
+        {{ form.password2 }}
+        <button type="button" class="password-toggle-button" data-target="{{ form.password2.id_for_label }}" aria-pressed="false">Show</button>
+      </div>
+      {% if form.password2.errors %}
+        <div class="signup-errors">{{ form.password2.errors }}</div>
+      {% endif %}
+    </div>
+
+    {% if form.non_field_errors %}
+      <div style="background: #f8d7da; color: #721c24; padding: 12px; border-radius: 6px; margin-bottom: 20px; border: 1px solid #f5c6cb;">
+        {{ form.non_field_errors }}
+      </div>
+    {% endif %}
+
+    <button
+      type="submit"
+      style="width: 100%; padding: 14px 24px; background: #005A43; color: white; border: none; border-radius: 6px; font-family: 'Inter', sans-serif; font-weight: 600; font-size: 16px; cursor: pointer; transition: background 0.2s;"
+      onmouseover="this.style.background='#004532'"
+      onmouseout="this.style.background='#005A43'"
+    >
+      Sign Up
+    </button>
+  </form>
+
+  <div class="signup-actions">
+    <span style="color: #6c757d; font-size: 14px;">Already have an account? </span>
+    <a href="{% url 'login' %}" style="color: #005A43; text-decoration: none; font-weight: 600; font-size: 14px;">Log In</a>
+  </div>
+
+  <div style="text-align: center; margin-top: 15px;">
+    <a href="{% url 'home' %}" style="color: #6c757d; text-decoration: none; font-size: 14px;">← Back to Home</a>
+  </div>
+</div>
+{% endblock %}

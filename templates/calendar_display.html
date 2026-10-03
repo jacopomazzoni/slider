@@ -1,0 +1,147 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Google Calendar</title>
+    {% if not paused_mode %}<meta http-equiv="refresh" content="{{ calendar_config.duration_seconds|default:30 }};url={% url 'slidedisplay' %}">{% endif %}
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap');
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        body,
+        html {
+            width: 100%;
+            height: 100%;
+            overflow: hidden;
+            background: #f8f9fa;
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+        }
+
+        .calendar-shell {
+            width: 100vw;
+            height: 100vh;
+            background: white;
+        }
+
+        .calendar-frame {
+            width: 100%;
+            height: 100%;
+            border: 0;
+            display: block;
+            background: white;
+            pointer-events: none;
+        }
+
+        .calendar-status {
+            width: 100%;
+            height: 100%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: #005A43;
+            font-size: 34px;
+            font-weight: 700;
+            text-align: center;
+            padding: 48px;
+        }
+    </style>
+</head>
+<body>
+    <main class="calendar-shell">
+        <iframe
+            id="calendar-frame"
+            class="calendar-frame"
+            title="Google Calendar"
+            referrerpolicy="no-referrer-when-downgrade"
+            sandbox="allow-forms allow-popups allow-popups-to-escape-sandbox allow-same-origin allow-scripts"
+            loading="eager"></iframe>
+        <div id="calendar-status" class="calendar-status" hidden>Loading calendar...</div>
+    </main>
+    {% include "includes/breaking_news_ticker.html" %}
+
+    <script>
+        const CALENDAR_PUBLIC_URL = "{{ calendar_config.public_url|escapejs }}";
+        const CALENDAR_DURATION = {{ calendar_config.duration_seconds|default:30 }} * 1000;
+        const SLIDE_PAUSED = {{ paused_mode|yesno:"true,false" }};
+        const NEXT_URL = "{% if transit_dashboard_available %}{% url 'transit_view' %}{% else %}{% url 'slidedisplay' %}{% endif %}";
+        const frame = document.getElementById("calendar-frame");
+        const statusNode = document.getElementById("calendar-status");
+        const displayStartedAt = Date.now();
+        const displayDeadline = displayStartedAt + Math.max(1000, CALENDAR_DURATION);
+        let advanceTimer = null;
+        let watchdogTimer = null;
+        let hasAdvanced = false;
+
+        function advanceSlideshow() {
+            if (hasAdvanced) return;
+            hasAdvanced = true;
+            window.clearTimeout(advanceTimer);
+            window.clearInterval(watchdogTimer);
+            frame.removeAttribute("src");
+            window.location.replace(NEXT_URL);
+        }
+
+        function showStatus(message) {
+            frame.hidden = true;
+            statusNode.hidden = false;
+            statusNode.textContent = message;
+        }
+
+        function freshCalendarUrl(publicUrl) {
+            const url = new URL(publicUrl);
+            if (url.searchParams.has("cid") && !url.searchParams.has("src")) {
+                url.searchParams.set("src", url.searchParams.get("cid"));
+            }
+            url.pathname = "/calendar/embed";
+            url.searchParams.set("mode", "WEEK");
+            url.searchParams.set("cms_refresh", Date.now().toString());
+            return url.toString();
+        }
+
+        function startAdvanceTimers() {
+            const remaining = Math.max(1000, displayDeadline - Date.now());
+            advanceTimer = window.setTimeout(advanceSlideshow, remaining);
+            watchdogTimer = window.setInterval(() => {
+                if (Date.now() >= displayDeadline) {
+                    advanceSlideshow();
+                }
+            }, 1000);
+        }
+
+        function loadCalendar() {
+            if (!CALENDAR_PUBLIC_URL) {
+                showStatus("No Google Calendar URL configured.");
+                return;
+            }
+
+            try {
+                frame.src = freshCalendarUrl(CALENDAR_PUBLIC_URL);
+            } catch (error) {
+                console.error("Invalid Google Calendar URL:", error);
+                showStatus("The Google Calendar URL is invalid.");
+            }
+        }
+
+        document.addEventListener("visibilitychange", () => {
+            if (!document.hidden && Date.now() >= displayDeadline) {
+                advanceSlideshow();
+            }
+        });
+
+        window.addEventListener("pagehide", () => {
+            window.clearTimeout(advanceTimer);
+            window.clearInterval(watchdogTimer);
+            frame.removeAttribute("src");
+        });
+
+        if (!SLIDE_PAUSED) startAdvanceTimers();
+        loadCalendar();
+    </script>
+</body>
+</html>

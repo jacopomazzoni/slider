@@ -1,0 +1,921 @@
+{% extends "base.html" %}
+
+{% block title %}Settings{% endblock %}
+
+{% block content %}
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap');
+        .activity-scroll { overflow-x: auto; }
+        .activity-table { min-width: 680px; table-layout: fixed; }
+        .activity-table th:first-child { width: 190px; }
+        .activity-table th:last-child { width: 110px; }
+        .activity-table td:last-child { white-space: nowrap; }
+        .activity-table td { overflow-wrap: anywhere; }
+        .activity-table time { font-variant-numeric: tabular-nums; }
+        .activity-pagination { display: flex; flex-wrap: wrap; align-items: center; gap: 12px; margin-top: 16px; }
+        
+        body {
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            margin: 0;
+            padding: 0;
+            background: #f5f5f5;
+        }
+        
+        .container {
+            max-width: 900px;
+            margin: 40px auto;
+            padding: 20px;
+        }
+
+        .settings-panel {
+            background: #fff;
+            border-radius: 8px;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+            padding: 24px;
+            margin-bottom: 28px;
+        }
+
+        .screen-power-toggle {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            margin: 0 0 20px;
+        }
+        .screen-power-toggle input { accent-color: var(--brand); }
+        .screen-power-panel .settings-meta { line-height: 1.6; }
+        .settings-panel h2 {
+            color: var(--brand);
+            margin: 0 0 10px;
+            font-size: 22px;
+        }
+
+        .settings-copy {
+            color: #666;
+            margin: 0 0 20px;
+            line-height: 1.5;
+        }
+
+        .settings-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+            gap: 16px;
+            align-items: end;
+        }
+
+        .settings-field label {
+            display: block;
+            color: var(--brand);
+            font-weight: 600;
+            margin-bottom: 8px;
+        }
+
+        .settings-field input,
+        .settings-field select {
+            width: 100%;
+            padding: 10px;
+            border: 1px solid #dee2e6;
+            border-radius: 6px;
+            font-family: 'Inter', sans-serif;
+            font-size: 14px;
+            background: #fff;
+        }
+
+        .settings-field input[type="color"] {
+            min-height: 52px;
+            padding: 4px;
+            cursor: pointer;
+            appearance: none;
+            -webkit-appearance: none;
+        }
+
+        .settings-field input[type="color"]::-webkit-color-swatch-wrapper {
+            padding: 0;
+        }
+
+        .settings-field input[type="color"]::-webkit-color-swatch {
+            border: 0;
+            border-radius: 4px;
+        }
+
+        .settings-field input[type="color"]::-moz-color-swatch {
+            border: 0;
+            border-radius: 4px;
+        }
+
+        .settings-field .password-input-group {
+            display: flex;
+            align-items: stretch;
+            gap: 10px;
+        }
+
+        .settings-field .password-input-group input {
+            flex: 1 1 auto;
+        }
+
+        .settings-field .password-toggle-button {
+            width: auto;
+            min-width: 72px;
+            padding: 0 14px;
+            border: 1px solid #dee2e6;
+            border-radius: 6px;
+            background: #fff;
+            color: var(--brand);
+            font-family: 'Inter', sans-serif;
+            font-size: 14px;
+            font-weight: 600;
+            cursor: pointer;
+        }
+
+        .settings-actions {
+            display: flex;
+            align-items: end;
+        }
+
+        .migration-actions {
+            display: flex;
+            gap: 12px;
+            align-items: center;
+            flex-wrap: wrap;
+            margin-top: 18px;
+        }
+
+        .danger-copy {
+            color: #7c2d12;
+        }
+
+        .field-help,
+        .field-errors {
+            margin-top: 8px;
+            font-size: 13px;
+            line-height: 1.45;
+        }
+
+        .field-help,
+        .field-help ul {
+            color: #6c757d;
+            padding-left: 18px;
+        }
+
+        .field-help ul {
+            margin: 6px 0 0;
+        }
+
+        .field-errors {
+            color: #721c24;
+        }
+
+        .field-errors ul {
+            margin: 0;
+            padding-left: 18px;
+        }
+
+        .settings-meta {
+            color: #6c757d;
+            font-size: 13px;
+            margin-top: 12px;
+        }
+        
+        .table {
+            width: 100%;
+            border-collapse: collapse;
+            background: #fff;
+            border-radius: 8px;
+            overflow: hidden;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+        }
+        
+        .table thead {
+            background: #f8f9fa;
+        }
+        
+        .table th {
+            padding: 15px;
+            text-align: left;
+            font-weight: 600;
+            color: var(--brand);
+            border-bottom: 2px solid #dee2e6;
+        }
+        
+        .table td {
+            padding: 15px;
+            border-bottom: 1px solid #dee2e6;
+        }
+        
+        .table tbody tr:hover {
+            background: #f8f9fa;
+        }
+        
+        .table tbody tr:last-child td {
+            border-bottom: none;
+        }
+        
+        .btn-upgrade {
+            padding: 8px 16px;
+            background: var(--brand);
+            color: white;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            font-family: 'Inter', sans-serif;
+            font-weight: 600;
+            transition: background 0.2s;
+        }
+        
+        .btn-upgrade:hover {
+            background: var(--brand-dark);
+        }
+        
+        .btn-downgrade {
+            padding: 8px 16px;
+            background: #dc3545;
+            color: white;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            font-family: 'Inter', sans-serif;
+            font-weight: 600;
+            transition: background 0.2s;
+        }
+        
+        .btn-downgrade:hover {
+            background: #c82333;
+        }
+        
+        .home-link {
+            display: inline-block;
+            margin-top: 30px;
+            padding: 10px 20px;
+            color: var(--brand);
+            text-decoration: none;
+            border: 1px solid #dee2e6;
+            border-radius: 6px;
+            font-weight: 600;
+            transition: all 0.2s;
+        }
+        
+        .home-link:hover {
+            background: #f8f9fa;
+            border-color: var(--brand);
+        }
+
+        .secondary-link {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            min-height: 44px;
+            padding: 12px 24px;
+            border: 1px solid #dee2e6;
+            border-radius: 6px;
+            background: white;
+            color: #212529;
+            text-decoration: none;
+            transition: background 0.2s, border-color 0.2s;
+            font-weight: 600;
+        }
+
+        .secondary-link:hover {
+            background: #f8f9fa;
+            border-color: var(--brand);
+        }
+
+        .appearance-grid {
+            display: grid;
+            grid-template-columns: minmax(0, 1.3fr) minmax(260px, 0.7fr);
+            gap: 24px;
+            align-items: start;
+        }
+
+        .appearance-preview-stack {
+            display: grid;
+            gap: 14px;
+        }
+
+        .favorite-color-toolbar {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            flex-wrap: wrap;
+            margin-top: 12px;
+        }
+
+        .favorite-colors-grid {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+            margin-top: 14px;
+        }
+
+        .favorite-color-card {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            padding: 6px;
+            border: 1px solid #dee2e6;
+            border-radius: 999px;
+            background: white;
+        }
+
+        .favorite-color-swatch {
+            width: 34px;
+            height: 34px;
+            border-radius: 999px;
+            border: 1px solid rgba(15, 23, 42, 0.14);
+            cursor: pointer;
+        }
+
+        .favorite-color-remove {
+            width: 28px;
+            height: 28px;
+            border: 0;
+            border-radius: 999px;
+            background: #f3f4f6;
+            color: #475467;
+            font-size: 16px;
+            line-height: 1;
+            cursor: pointer;
+        }
+
+        .favorite-color-empty {
+            color: #6c757d;
+            font-size: 13px;
+        }
+
+        .theme-preview-shell {
+            overflow: hidden;
+            border: 1px solid #d7dfdb;
+            border-radius: 8px;
+            background: white;
+        }
+
+        .theme-preview-header {
+            min-height: 48px;
+            background: var(--brand);
+            transition: background 0.2s ease;
+        }
+
+        .theme-preview-content {
+            display: grid;
+            gap: 12px;
+            padding: 16px;
+            background: #f8faf9;
+        }
+
+        .theme-preview-pill {
+            width: fit-content;
+            min-height: 28px;
+            padding: 4px 10px;
+            border-radius: 999px;
+            background: color-mix(in srgb, var(--brand) 12%, white);
+            color: var(--brand);
+            font-size: 12px;
+            font-weight: 700;
+            transition: background 0.2s ease, color 0.2s ease;
+        }
+
+        .theme-preview-button {
+            width: fit-content;
+            min-height: 38px;
+            padding: 8px 14px;
+            border-radius: 6px;
+            background: var(--brand);
+            color: white;
+            font-size: 14px;
+            font-weight: 700;
+            transition: background 0.2s ease;
+        }
+
+        .theme-preview-value {
+            margin-top: 10px;
+            color: #475467;
+            font-size: 13px;
+            font-weight: 700;
+        }
+
+        .appearance-preview-card {
+            padding: 18px;
+            border: 1px solid #dee2e6;
+            border-radius: 8px;
+            background: #f8f9fa;
+        }
+
+        .appearance-preview-label {
+            color: var(--brand);
+            font-size: 13px;
+            font-weight: 700;
+            margin-bottom: 10px;
+        }
+
+        .appearance-preview-card img {
+            display: block;
+            max-width: 100%;
+            max-height: 72px;
+            object-fit: contain;
+            background: white;
+            border-radius: 6px;
+            border: 1px solid #dee2e6;
+            padding: 8px;
+        }
+
+        .favicon-preview {
+            width: 48px;
+            height: 48px;
+        }
+
+        .theme-swatch {
+            width: 100%;
+            min-height: 52px;
+            border-radius: 8px;
+            border: 1px solid #dee2e6;
+        }
+
+        .settings-panel .table {
+            box-shadow: none;
+            border: 1px solid #dee2e6;
+            margin-top: 18px;
+        }
+
+        .messages {
+            margin-bottom: 20px;
+        }
+
+        .alert {
+            padding: 12px 20px;
+            border-radius: 6px;
+            margin-bottom: 12px;
+        }
+
+        .alert-success {
+            background: #d4edda;
+            color: #155724;
+            border: 1px solid #c3e6cb;
+        }
+
+        .alert-error {
+            background: #f8d7da;
+            color: #721c24;
+            border: 1px solid #f5c6cb;
+        }
+
+        @media (max-width: 760px) {
+            .settings-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .appearance-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+    <div class="container">
+        <div class="page-header">
+            <h1 class="page-title">Settings</h1>
+        </div>
+
+        {% if messages %}
+            <div class="messages">
+                {% for message in messages %}
+                    <div class="alert alert-{{ message.tags }}">
+                        {{ message }}
+                    </div>
+                {% endfor %}
+            </div>
+        {% endif %}
+
+        <section class="settings-panel" aria-labelledby="site-appearance-title">
+            <h2 id="site-appearance-title">Site Settings</h2>
+            <form action="{% url 'update_site_appearance' %}" method="POST" enctype="multipart/form-data">
+                {% csrf_token %}
+                <div class="appearance-grid">
+                    <div class="settings-grid">
+                        <div class="settings-field">
+                            <label for="{{ site_appearance_form.public_base_url.id_for_label }}">Public Base URL</label>
+                            {{ site_appearance_form.public_base_url }}
+                            {% if site_appearance_form.public_base_url.errors %}
+                                <div class="field-errors">{{ site_appearance_form.public_base_url.errors }}</div>
+                            {% endif %}
+                        </div>
+                        <div class="settings-field">
+                            <label for="{{ site_appearance_form.theme_color.id_for_label }}">Theme Color</label>
+                            {{ site_appearance_form.theme_color }}
+                            {{ site_appearance_form.favorite_theme_colors }}
+                            <div class="favorite-color-toolbar">
+                                <button type="button" class="secondary-link" id="save-favorite-color">Save Current Color</button>
+                                <span class="settings-meta" id="favorite-color-status">Save up to 8 favorite colors for quick reuse.</span>
+                            </div>
+                            <div class="favorite-colors-grid" id="favorite-colors-grid" aria-live="polite"></div>
+                            {% if site_appearance_form.theme_color.errors %}
+                                <div class="field-errors">{{ site_appearance_form.theme_color.errors }}</div>
+                            {% endif %}
+                            {% if site_appearance_form.favorite_theme_colors.errors %}
+                                <div class="field-errors">{{ site_appearance_form.favorite_theme_colors.errors }}</div>
+                            {% endif %}
+                        </div>
+                        <div class="settings-field">
+                            <label for="{{ site_appearance_form.logo.id_for_label }}">Header Logo</label>
+                            {{ site_appearance_form.logo }}
+                            {% if site_appearance_form.logo.errors %}
+                                <div class="field-errors">{{ site_appearance_form.logo.errors }}</div>
+                            {% endif %}
+                        </div>
+                        <div class="settings-field">
+                            <label for="{{ site_appearance_form.favicon.id_for_label }}">Favicon</label>
+                            {{ site_appearance_form.favicon }}
+                            {% if site_appearance_form.favicon.errors %}
+                                <div class="field-errors">{{ site_appearance_form.favicon.errors }}</div>
+                            {% endif %}
+                        </div>
+                        <div class="settings-actions">
+                            <button type="submit" class="btn-upgrade">Save Site Settings</button>
+                        </div>
+                    </div>
+                    <div class="appearance-preview-stack">
+                        <div class="appearance-preview-card">
+                            <div class="appearance-preview-label">Theme Preview</div>
+                            <div class="theme-swatch" id="theme-swatch" style="background: {{ site_appearance.theme_color|default:'#005A43' }};"></div>
+                            <div class="theme-preview-shell">
+                                <div class="theme-preview-header" id="theme-preview-header"></div>
+                                <div class="theme-preview-content">
+                                    <span class="theme-preview-pill" id="theme-preview-pill">Theme Accent</span>
+                                    <span class="theme-preview-button" id="theme-preview-button">Primary Action</span>
+                                </div>
+                            </div>
+                            <div class="theme-preview-value" id="theme-preview-value">{{ site_appearance.theme_color|default:'#005A43' }}</div>
+                        </div>
+                        <div class="appearance-preview-card">
+                            <div class="appearance-preview-label">Header Logo</div>
+                            {% if site_appearance.logo_url %}
+                                <img src="{{ site_appearance.logo_url }}" alt="Current site logo" id="site-logo-preview">
+                            {% else %}
+                                <div class="settings-meta" id="site-logo-empty">No logo selected yet.</div>
+                                <img src="" alt="Current site logo" id="site-logo-preview" style="display: none;">
+                            {% endif %}
+                        </div>
+                        <div class="appearance-preview-card">
+                            <div class="appearance-preview-label">Favicon</div>
+                            {% if site_appearance.favicon_url %}
+                                <img src="{{ site_appearance.favicon_url }}" alt="Current favicon" class="favicon-preview" id="site-favicon-preview">
+                            {% else %}
+                                <div class="settings-meta" id="site-favicon-empty">No favicon selected yet.</div>
+                                <img src="" alt="Current favicon" class="favicon-preview" id="site-favicon-preview" style="display: none;">
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+            </form>
+        </section>
+
+        <section class="settings-panel screen-power-panel" aria-labelledby="screen-power-settings-title">
+            <h2 id="screen-power-settings-title">Screen Power Schedule</h2>
+            <p class="settings-copy">Time zone: {{ screen_power_timezone }}</p>
+            <form action="{% url 'update_screen_power_schedule' %}" method="POST">
+                {% csrf_token %}
+                <label class="screen-power-toggle">{{ screen_power_schedule_form.is_enabled }} Enable daily screen schedule</label>
+                <div class="settings-grid">
+                    <div class="settings-field">
+                        <label for="id_screen_on_time">Screen On</label>
+                        {{ screen_power_schedule_form.screen_on_time }}
+                        {% if screen_power_schedule_form.screen_on_time.errors %}
+                            <div class="field-errors">{{ screen_power_schedule_form.screen_on_time.errors }}</div>
+                        {% endif %}
+                    </div>
+                    <div class="settings-field">
+                        <label for="id_screen_off_time">Screen Off</label>
+                        {{ screen_power_schedule_form.screen_off_time }}
+                        {% if screen_power_schedule_form.screen_off_time.errors %}
+                            <div class="field-errors">{{ screen_power_schedule_form.screen_off_time.errors }}</div>
+                        {% endif %}
+                    </div>
+                    <div class="settings-actions">
+                        <button type="submit" class="btn-upgrade">Save Schedule</button>
+                    </div>
+                </div>
+            </form>
+            <div class="settings-meta">
+                Scheduler: {% if screen_power_schedule.scheduler_healthy %}Running{% else %}<strong>Not detected. Redis, Celery worker and Beat must be running.</strong>{% endif %}<br>
+                Last scheduler check: {{ screen_power_schedule.last_scheduler_check|date:"Y-m-d H:i:s T"|default:"Never" }}<br>
+                Last confirmed on: {{ screen_power_schedule.last_screen_on_run|date:"Y-m-d H:i:s T"|default:"Never" }}<br>
+                Last confirmed standby: {{ screen_power_schedule.last_screen_off_run|date:"Y-m-d H:i:s T"|default:"Never" }}
+                {% if screen_power_schedule.last_error %}<p role="alert" style="overflow-wrap:anywhere">{{ screen_power_schedule.last_error }}</p>{% endif %}
+            </div>
+        </section>
+
+        <section class="settings-panel" aria-labelledby="password-reset-settings-title">
+            <h2 id="password-reset-settings-title">Password Management</h2>
+            <p class="settings-copy">Set a fresh password for any account directly from this page. This replaces the password reset shortcut in the main menu.</p>
+            <form action="{% url 'reset_user_password' %}" method="POST">
+                {% csrf_token %}
+                <div class="settings-grid">
+                    <div class="settings-field">
+                        <label for="{{ user_password_reset_form.user.id_for_label }}">User</label>
+                        {{ user_password_reset_form.user }}
+                        {% if user_password_reset_form.user.errors %}
+                            <div class="field-errors">{{ user_password_reset_form.user.errors }}</div>
+                        {% endif %}
+                    </div>
+                    <div class="settings-field">
+                        <label for="{{ user_password_reset_form.new_password1.id_for_label }}">New Password</label>
+                        <div class="password-input-group">
+                            {{ user_password_reset_form.new_password1 }}
+                            <button type="button" class="password-toggle-button" data-target="{{ user_password_reset_form.new_password1.id_for_label }}" aria-pressed="false">Show</button>
+                        </div>
+                        {% if user_password_reset_form.new_password1.errors %}
+                            <div class="field-errors">{{ user_password_reset_form.new_password1.errors }}</div>
+                        {% endif %}
+                    </div>
+                    <div class="settings-field">
+                        <label for="{{ user_password_reset_form.new_password2.id_for_label }}">Confirm Password</label>
+                        <div class="password-input-group">
+                            {{ user_password_reset_form.new_password2 }}
+                            <button type="button" class="password-toggle-button" data-target="{{ user_password_reset_form.new_password2.id_for_label }}" aria-pressed="false">Show</button>
+                        </div>
+                        {% if user_password_reset_form.new_password2.errors %}
+                            <div class="field-errors">{{ user_password_reset_form.new_password2.errors }}</div>
+                        {% endif %}
+                    </div>
+                    <div class="settings-actions">
+                        <button type="submit" class="btn-upgrade">Update Password</button>
+                    </div>
+                </div>
+            </form>
+        </section>
+
+        <section class="settings-panel" aria-labelledby="site-migration-title">
+            <h2 id="site-migration-title">Site Migration</h2>
+            <p class="settings-copy">Export the current slides, settings, branding, dateline content, and media into one structured zip file, or import a zip like that into this site.</p>
+            <p class="settings-copy danger-copy">Importing a migration archive replaces the current slide library, site settings, branding files, and generated media on this site.</p>
+
+            <div class="migration-actions">
+                <a class="secondary-link" href="{% url 'export_site_migration' %}">Download Site Export</a>
+            </div>
+
+            <form action="{% url 'import_site_migration' %}" method="POST" enctype="multipart/form-data" style="margin-top: 24px;">
+                {% csrf_token %}
+                <div class="settings-grid">
+                    <div class="settings-field">
+                        <label for="{{ site_migration_form.archive_file.id_for_label }}">Zip File</label>
+                        {{ site_migration_form.archive_file }}
+                        {% if site_migration_form.archive_file.errors %}
+                            <div class="field-errors">{{ site_migration_form.archive_file.errors }}</div>
+                        {% endif %}
+                    </div>
+                    <div class="settings-field">
+                        <label for="{{ site_migration_form.archive_url.id_for_label }}">Zip URL</label>
+                        {{ site_migration_form.archive_url }}
+                        {% if site_migration_form.archive_url.errors %}
+                            <div class="field-errors">{{ site_migration_form.archive_url.errors }}</div>
+                        {% endif %}
+                    </div>
+                    <div class="settings-actions">
+                        <button type="submit" class="btn-upgrade">Import Archive</button>
+                    </div>
+                </div>
+                {% if site_migration_form.non_field_errors %}
+                    <div class="field-errors">{{ site_migration_form.non_field_errors }}</div>
+                {% endif %}
+            </form>
+        </section>
+
+        <section class="settings-panel" aria-labelledby="create-user-title">
+            <h2 id="create-user-title">Create User</h2>
+            <p class="settings-copy">Open the signup screen to add a new account for another operator or admin.</p>
+            <div class="migration-actions">
+                <a href="{% url 'signup' %}" class="secondary-link">Create User</a>
+            </div>
+        </section>
+
+        <section class="settings-panel" aria-labelledby="user-role-title">
+            <h2 id="user-role-title">User Roles</h2>
+            <p class="settings-copy">Review users on this site and change superuser access when needed.</p>
+            {% if users %}
+                <table class="table">
+                    <thead>
+                        <tr>
+                            <th>Username</th>
+                            <th>Email</th>
+                            <th>Superuser</th>
+                            <th>Action</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for user in users %}
+                            <tr>
+                                <td>{{ user.username }}</td>
+                                <td>{{ user.email|default:"No email" }}</td>
+                                <td>
+                                    {% if user.is_superuser %}
+                                        Yes
+                                    {% else %}
+                                        No
+                                    {% endif %}
+                                </td>
+                                <td>
+                                    <form action="{% url 'toggle_superuser' user.pk %}" method="POST" style="display: inline;">
+                                        {% csrf_token %}
+                                        {% if user.is_superuser %}
+                                            <button type="submit" class="btn-downgrade">Downgrade</button>
+                                        {% else %}
+                                            <button type="submit" class="btn-upgrade">Upgrade</button>
+                                        {% endif %}
+                                    </form>
+                                </td>
+                            </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            {% else %}
+                <p>No users found.</p>
+            {% endif %}
+        </section>
+
+        {% include 'includes/software_updates.html' %}
+        <section class="settings-panel" id="activity-log" aria-labelledby="activity-log-title">
+            <h2 id="activity-log-title">Activity Log</h2>
+            <div class="activity-scroll">
+                <table class="table activity-table">
+                    <thead><tr><th scope="col">Timestamp</th><th scope="col">User</th><th scope="col">Action</th><th scope="col">Details</th><th scope="col">Result</th></tr></thead>
+                    <tbody>
+                        {% for entry in activity_page %}
+                        <tr>
+                            <td><time datetime="{{ entry.occurred_at|date:'c' }}">{{ entry.occurred_at|date:'Y-m-d H:i:s T' }}</time></td>
+                            <td>{{ entry.username }}</td>
+                            <td>{{ entry.action }}</td>
+                            <td>{{ entry.target|default:'—' }}</td>
+                            <td>{{ entry.get_outcome_display }}</td>
+                        </tr>
+                        {% empty %}
+                        <tr><td colspan="5">No activity recorded yet.</td></tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+            <nav class="activity-pagination" aria-label="Activity log pages">
+                {% if activity_page.has_previous %}<a class="secondary-link" href="{% url 'settings' %}?activity_page={{ activity_page.previous_page_number }}#activity-log">Newer</a>{% endif %}
+                <span>Page {{ activity_page.number }} of {{ activity_page.paginator.num_pages }}</span>
+                {% if activity_page.has_next %}<a class="secondary-link" href="{% url 'settings' %}?activity_page={{ activity_page.next_page_number }}#activity-log">Older</a>{% endif %}
+                <a class="secondary-link" href="{% url 'settings' %}#activity-log">Refresh</a>
+            </nav>
+        </section>
+
+        <div style="text-align: center;">
+            <a href="{% url 'home' %}" class="home-link">Home</a>
+        </div>
+        
+    </div>
+    <script>
+        (function() {
+            const themeInput = document.getElementById('{{ site_appearance_form.theme_color.id_for_label }}');
+            const favoritesInput = document.getElementById('{{ site_appearance_form.favorite_theme_colors.id_for_label }}');
+            const favoritesGrid = document.getElementById('favorite-colors-grid');
+            const saveFavoriteButton = document.getElementById('save-favorite-color');
+            const favoriteStatus = document.getElementById('favorite-color-status');
+            const themeSwatch = document.getElementById('theme-swatch');
+            const themePreviewHeader = document.getElementById('theme-preview-header');
+            const themePreviewButton = document.getElementById('theme-preview-button');
+            const themePreviewPill = document.getElementById('theme-preview-pill');
+            const themePreviewValue = document.getElementById('theme-preview-value');
+            const logoInput = document.getElementById('{{ site_appearance_form.logo.id_for_label }}');
+            const faviconInput = document.getElementById('{{ site_appearance_form.favicon.id_for_label }}');
+            const logoPreview = document.getElementById('site-logo-preview');
+            const faviconPreview = document.getElementById('site-favicon-preview');
+            const logoEmpty = document.getElementById('site-logo-empty');
+            const faviconEmpty = document.getElementById('site-favicon-empty');
+
+            function normalizeColor(value) {
+                const color = String(value || '').trim().toUpperCase();
+                return /^#[0-9A-F]{6}$/.test(color) ? color : '#005A43';
+            }
+
+            function parseFavorites() {
+                try {
+                    const parsed = JSON.parse(favoritesInput?.value || '[]');
+                    return Array.isArray(parsed) ? parsed.map(normalizeColor) : [];
+                } catch (error) {
+                    return [];
+                }
+            }
+
+            let favoriteColors = Array.from(new Set(parseFavorites()));
+
+            function syncFavoritesField() {
+                if (favoritesInput) {
+                    favoritesInput.value = JSON.stringify(favoriteColors);
+                }
+            }
+
+            function setFavoriteStatus(message) {
+                if (favoriteStatus) {
+                    favoriteStatus.textContent = message;
+                }
+            }
+
+            function renderFavorites() {
+                if (!favoritesGrid) return;
+                favoritesGrid.innerHTML = '';
+
+                if (!favoriteColors.length) {
+                    const emptyState = document.createElement('div');
+                    emptyState.className = 'favorite-color-empty';
+                    emptyState.textContent = 'No favorite colors saved yet.';
+                    favoritesGrid.appendChild(emptyState);
+                    return;
+                }
+
+                favoriteColors.forEach((color, index) => {
+                    const card = document.createElement('div');
+                    card.className = 'favorite-color-card';
+
+                    const swatch = document.createElement('button');
+                    swatch.type = 'button';
+                    swatch.className = 'favorite-color-swatch';
+                    swatch.style.background = color;
+                    swatch.setAttribute('aria-label', `Use favorite color ${color}`);
+                    swatch.addEventListener('click', () => {
+                        if (themeInput) {
+                            themeInput.value = color;
+                            updateThemePreview();
+                        }
+                        setFavoriteStatus(`Theme color set to ${color}.`);
+                    });
+
+                    const removeButton = document.createElement('button');
+                    removeButton.type = 'button';
+                    removeButton.className = 'favorite-color-remove';
+                    removeButton.setAttribute('aria-label', `Remove favorite color ${color}`);
+                    removeButton.textContent = '×';
+                    removeButton.addEventListener('click', () => {
+                        favoriteColors.splice(index, 1);
+                        syncFavoritesField();
+                        renderFavorites();
+                        setFavoriteStatus(`${color} removed from favorites.`);
+                    });
+
+                    card.appendChild(swatch);
+                    card.appendChild(removeButton);
+                    favoritesGrid.appendChild(card);
+                });
+            }
+
+            function updateThemePreview() {
+                const color = normalizeColor(themeInput?.value);
+                if (themeInput) {
+                    themeInput.value = color;
+                }
+                if (themeSwatch) themeSwatch.style.background = color;
+                if (themePreviewHeader) themePreviewHeader.style.background = color;
+                if (themePreviewButton) themePreviewButton.style.background = color;
+                if (themePreviewPill) {
+                    themePreviewPill.style.color = color;
+                    themePreviewPill.style.background = `color-mix(in srgb, ${color} 14%, white)`;
+                }
+                if (themePreviewValue) {
+                    themePreviewValue.textContent = color;
+                }
+            }
+
+            function previewSelectedImage(input, imageNode, emptyNode) {
+                const file = input?.files?.[0];
+                if (!file || !imageNode) return;
+                const reader = new FileReader();
+                reader.onload = (event) => {
+                    imageNode.src = event.target?.result || '';
+                    imageNode.style.display = 'block';
+                    if (emptyNode) emptyNode.style.display = 'none';
+                };
+                reader.readAsDataURL(file);
+            }
+
+            if (themeInput) {
+                themeInput.addEventListener('input', updateThemePreview);
+            }
+
+            if (saveFavoriteButton) {
+                saveFavoriteButton.addEventListener('click', () => {
+                    const color = normalizeColor(themeInput?.value);
+                    if (favoriteColors.includes(color)) {
+                        setFavoriteStatus(`${color} is already saved.`);
+                        return;
+                    }
+                    if (favoriteColors.length >= 8) {
+                        setFavoriteStatus('You can save up to 8 favorite colors.');
+                        return;
+                    }
+                    favoriteColors.push(color);
+                    syncFavoritesField();
+                    renderFavorites();
+                    setFavoriteStatus(`${color} saved to favorites.`);
+                });
+            }
+
+            if (logoInput) {
+                logoInput.addEventListener('change', () => previewSelectedImage(logoInput, logoPreview, logoEmpty));
+            }
+            if (faviconInput) {
+                faviconInput.addEventListener('change', () => previewSelectedImage(faviconInput, faviconPreview, faviconEmpty));
+            }
+
+            syncFavoritesField();
+            renderFavorites();
+            updateThemePreview();
+        })();
+    </script>
+{% endblock %}

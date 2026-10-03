@@ -1,0 +1,168 @@
+{% extends "base.html" %}
+{% load navigation_tags %}
+
+{% block title %}Home{% endblock %}
+
+{% block content %}
+<style>
+  .home-shell {
+    max-width: 1400px;
+    margin: 0 auto;
+    padding: 40px 20px 56px;
+  }
+
+  .home-intro {
+    max-width: 760px;
+    margin: 0 auto 32px;
+    text-align: center;
+  }
+
+  .home-intro h2 {
+    margin: 0;
+    color: var(--brand);
+    font-size: 32px;
+    font-weight: 700;
+  }
+
+  .home-intro p {
+    margin: 14px auto 0;
+    color: #6c757d;
+    font-size: 16px;
+    line-height: 1.5;
+  }
+
+  .home-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+    gap: 20px;
+  }
+
+  .card-link {
+    min-height: 240px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 26px 22px;
+    background: #f8f9fa;
+    border: 1px solid #dee2e6;
+    border-radius: 8px;
+    text-decoration: none;
+    color: #212529;
+    transition: all 0.2s;
+    text-align: center;
+  }
+
+  .card-link:hover {
+    background: color-mix(in srgb, var(--brand) 10%, white);
+    border-color: var(--brand);
+  }
+
+  .card-title {
+    color: var(--brand);
+    font-weight: 600;
+    font-size: 22px;
+    margin: 0 0 14px;
+  }
+
+  .card-description {
+    color: #6c757d;
+    font-size: 14px;
+    line-height: 1.5;
+    margin: 0;
+  }
+
+  .card-icon {
+    width: 80px;
+    height: 80px;
+    margin: 0 0 16px;
+    padding: 12px;
+    border-radius: 8px;
+    color: var(--brand);
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  .card-icon svg {
+    width: 100%;
+    height: 100%;
+  }
+
+  .footer {
+    margin-top: 40px;
+    background-color: var(--brand);
+    padding: 15px 20px;
+    color: #f8f9fa;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 16px;
+    flex-wrap: wrap;
+  }
+
+  .footer a {
+    color: #f8f9fa;
+    text-decoration: none;
+  }
+
+  .footer a:hover {
+    text-decoration: underline;
+  }
+
+  @media (max-width: 640px) {
+    .home-shell {
+      padding: 32px 16px 44px;
+    }
+
+    .home-intro h2 {
+      font-size: 28px;
+    }
+
+    .card-link {
+      min-height: 220px;
+    }
+
+    .footer {
+      justify-content: center;
+      text-align: center;
+    }
+  }
+</style>
+
+{% nav_items user as app_nav_items %}
+
+<div class="home-shell">
+  {% if user.is_authenticated %}
+    <section class="home-intro">
+      <h2>Control Center</h2>
+      <p>Everything from the main menu is available here as a dashboard card, so you can jump straight into the next task.</p>
+    </section>
+  {% else %}
+    <section class="home-intro">
+      <h2>Welcome to sliderCMS</h2>
+      <p>Open the slideshow right away or sign in to manage slides, settings, and display controls.</p>
+    </section>
+  {% endif %}
+
+  {% include 'includes/software_updates.html' %}
+  <section class="home-grid" aria-label="Main actions">
+    {% for item in app_nav_items %}
+      {% if item.key != "home" %}
+        <a href="{{ item.url }}" class="card-link">
+          <span class="card-icon" aria-hidden="true">
+            {% include "includes/nav_icon.html" with icon=item.icon %}
+          </span>
+          <h3 class="card-title">{{ item.label }}</h3>
+          <p class="card-description">{{ item.description }}</p>
+        </a>
+      {% endif %}
+    {% endfor %}
+  </section>
+</div>
+
+<div class="footer">
+  <span>About sliderCMS</span>
+  <p>Digital &amp; Data Studies 2026</p>
+</div>
+{% endblock %}

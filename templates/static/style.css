@@ -1,0 +1,140 @@
+html,body{
+  margin:0;height:100%;overflow:hidden;
+  font-family:system-ui,sans-serif;background:#f6f7fb;color:#000;
+}
+.main-card{
+  display:flex;flex-direction:column;
+  width:100%;height:100vh;background:#fff;
+  box-shadow:0 4px 18px rgba(0,0,0,.15);
+  overflow:hidden;
+}
+.alert-banner{
+  display:none;background:#b71c1c;color:#fff;
+  text-align:center;font-weight:bold;padding:0.6rem;font-size:1rem;
+}
+#radar-map{
+  position:relative;
+  flex:1 1 auto;width:100%;height:55vh;min-height:320px;
+}
+.nasa-gibs-overlay{
+  image-rendering:auto;
+  filter:contrast(1.18) saturate(1.08);
+}
+#timestamp{
+  position:absolute;bottom:32px;right:12px;z-index:9000;
+  background:rgba(0,0,0,.5);color:#fff;
+  font:500 .9rem/1 monospace;
+  padding:4px 8px;border-radius:6px;
+}
+/* Timeline visualization */
+#timeline{
+  position:absolute;
+  bottom:8px;left:12px;right:12px;
+  height:20px;z-index:9000;
+  display:flex;align-items:center;justify-content:center;
+}
+.timeline-track{
+  position:relative;width:100%;height:4px;
+  background:rgba(255,255,255,0.3);
+  border-radius:2px;
+}
+.timeline-tick{
+  position:absolute;width:1px;height:8px;
+  background:rgba(255,255,255,0.7);
+  top:-2px;
+}
+.timeline-marker{
+  position:absolute;top:-6px;width:12px;height:12px;
+  background:#fff;border-radius:50%;
+  box-shadow:0 0 4px rgba(0,0,0,0.6);
+  transform:translateX(-50%);
+  transition:left 0.5s ease-in-out;
+}
+
+/* ===== Aggressively scalable sidebar ===== */
+.side-tab{
+  --s: 1;
+  position:absolute;top:12px;left:12px;z-index:9001;
+  width:340px;max-width:48vw;
+  background:rgba(0,0,0,.55);color:#fff;
+  border-radius:10px;
+  padding:calc(10px*var(--s)) calc(12px*var(--s)) calc(8px*var(--s));
+  backdrop-filter:blur(2px);
+  overflow:hidden;
+  display:flex;flex-direction:column;
+  font-size:calc(1rem*var(--s));
+  line-height:calc(1.15*var(--s));
+}
+.group{
+  margin-bottom:calc(8px*var(--s));
+  padding-bottom:calc(6px*var(--s));
+  border-bottom:1px solid rgba(255,255,255,.15);
+}
+.row{
+  display:flex;gap:calc(8px*var(--s));align-items:center;
+  padding:calc(2px*var(--s)) 0;
+}
+.row i{
+  width:calc(20px*var(--s));
+  text-align:center;
+  font-size:calc(1.1rem*var(--s));
+  color:#fff;opacity:.95;
+}
+.row span{white-space:nowrap;}
+
+/* === Bottom panel with 3 columns === */
+.bottom-panel{
+  flex:0 0 auto;
+  display:grid;
+  grid-template-columns: 1fr 1fr 1fr;
+  align-items:start;
+  justify-content:space-between;
+  gap:1rem;
+  padding:1rem 2rem 0.8rem 2rem;
+}
+.bottom-col{
+  display:flex;
+  flex-direction:column;
+  gap:0.4rem;
+}
+.conditions{
+  white-space:pre-line;
+  font-size:1rem;
+  color:#111;
+  line-height:1.4;
+}
+.col-metrics, .col-extra{
+  font-size:1rem;
+  text-align:left;
+}
+.col-metrics span, .col-extra span{
+  display:flex;
+  align-items:center;
+  gap:0.4rem;
+}
+.col-metrics i, .col-extra i{color:#444;}
+
+/* Forecast row */
+.forecast-row{
+  display:flex;justify-content:space-evenly;align-items:stretch;
+  flex-wrap:nowrap;width:100%;gap:1rem;padding:0.6rem 1rem;
+}
+.forecast-card{
+  flex:1 1 0;background:#fafafa;border-radius:8px;padding:0.5rem;
+  text-align:center;box-shadow:0 1px 3px rgba(0,0,0,.1);
+}
+.forecast-card i{font-size:2rem;margin:0.3rem 0;color:#555;}
+footer{
+  font-size:0.75rem;color:#666;padding-top:0.3rem;
+  text-align:center;width:100%;border-top:1px solid #eee;
+}
+
+/* Animated weather icons (from upload #1) */
+@keyframes spin{from{transform:rotate(0)}to{transform:rotate(360deg)}}
+@keyframes drift{0%{transform:translateX(0)}50%{transform:translateX(6px)}100%{transform:translateX(0)}}
+@keyframes fall{0%{transform:translateY(0)}100%{transform:translateY(4px)}}
+@keyframes flash{0%,100%{opacity:1}50%{opacity:0.3}}
+.animate-sun{animation:spin 18s linear infinite;color:#f6b500}
+.animate-cloud{animation:drift 6s ease-in-out infinite}
+.animate-rain,.animate-snow{animation:fall 1s linear infinite alternate}
+.animate-thunder{animation:flash 1s linear infinite;color:#ffcc00}

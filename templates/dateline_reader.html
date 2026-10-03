@@ -1,0 +1,481 @@
+<!DOCTYPE html>
+<html lang="en">
+    <head>
+        <meta charset="UTF-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <title>Dateline Announcements</title>
+
+        <style>
+            @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap');
+
+            * {
+                box-sizing: border-box;
+                margin: 0;
+                padding: 0;
+            }
+
+            body {
+                width: 100vw;
+                height: 100vh;
+                overflow: hidden;
+                font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+                background: #005A43;
+                color: white;
+            }
+
+            .announcement-stage {
+                position: relative;
+                width: 100%;
+                height: 100%;
+                overflow: hidden;
+            }
+
+            .announcement-slide {
+                position: absolute;
+                inset: 0;
+                width: 100%;
+                height: 100%;
+                display: flex;
+                flex-direction: column;
+                justify-content: flex-start;
+                align-items: center;
+                padding: 6vh 8vw 18vh;
+                text-align: center;
+                opacity: 0;
+                visibility: hidden;
+                z-index: 0;
+                transition: opacity 900ms ease;
+                overflow: hidden;
+            }
+
+            .announcement-slide.active,
+            .announcement-slide.incoming,
+            .announcement-slide.outgoing {
+                visibility: visible;
+            }
+
+            .announcement-slide.active {
+                opacity: 1;
+                z-index: 2;
+            }
+
+            .announcement-slide.incoming {
+                opacity: 1;
+                z-index: 3;
+            }
+
+            .announcement-slide.outgoing {
+                opacity: 0;
+                z-index: 2;
+            }
+
+            .transition-curtain {
+                position: absolute;
+                inset: 0;
+                opacity: 0;
+                pointer-events: none;
+                z-index: 10;
+                transition: opacity 450ms ease;
+            }
+
+            .transition-curtain.visible {
+                opacity: 1;
+            }
+
+            .source-label {
+                padding: 8px 18px;
+                border: 2px solid rgba(255, 255, 255, 0.45);
+                border-radius: 999px;
+                color: #e8f5f1;
+                font-size: 18px;
+                font-weight: 700;
+                margin-bottom: 28px;
+            }
+
+            .category {
+                color: #b8eadc;
+                font-size: 28px;
+                font-weight: 700;
+                margin-bottom: 24px;
+            }
+
+            h1 {
+                max-width: 1200px;
+                color: #ffffff;
+                font-size: 58px;
+                line-height: 1.12;
+                font-weight: 700;
+                margin-bottom: 34px;
+            }
+
+            .body {
+                max-width: 1200px;
+                color: #f4fbf8;
+                font-size: 30px;
+                line-height: 1.45;
+                white-space: pre-line;
+            }
+
+            .announcement-copy {
+                width: 100%;
+            }
+
+            .announcement-slide.overflow-scroll .announcement-copy,
+            .announcement-slide.overflow-scale .announcement-copy {
+                height: 76vh;
+                overflow: hidden;
+            }
+
+            .announcement-slide.overflow-scroll .announcement-content {
+                display: flex;
+                flex-direction: column;
+                height: 100%;
+            }
+
+            .announcement-slide.overflow-scroll .announcement-header {
+                flex: 0 0 auto;
+                width: 100%;
+            }
+
+            .announcement-slide.overflow-scroll .body-window {
+                flex: 1 1 auto;
+                min-height: 0;
+                overflow: hidden;
+                width: 100%;
+            }
+
+            .announcement-slide.overflow-scroll .body {
+                animation: dateline-body-scroll var(--body-scroll-duration, 8s) linear forwards;
+                animation-play-state: paused;
+            }
+
+            .announcement-slide.overflow-scroll.active .body,
+            .announcement-slide.overflow-scroll.incoming .body {
+                animation-play-state: running;
+            }
+
+            .announcement-slide.overflow-scale .announcement-content {
+                transform: scale(var(--fit-scale, 1));
+                transform-origin: top center;
+            }
+
+            .announcement-slide.overflow-scale .title,
+            .announcement-slide.overflow-scale .body {
+                margin-inline: auto;
+                overflow-wrap: anywhere;
+            }
+
+            @keyframes dateline-body-scroll {
+                to { transform: translateY(calc(-1 * var(--body-scroll-distance, 0px))); }
+            }
+
+            .footer-fade {
+                position: absolute;
+                left: 0;
+                right: 0;
+                bottom: 0;
+                height: min(24vh, 240px);
+                background: linear-gradient(
+                    180deg,
+                    rgba(0, 90, 67, 0) 0%,
+                    rgba(0, 90, 67, 0.72) 58%,
+                    rgba(0, 90, 67, 1) 100%
+                );
+                pointer-events: none;
+                z-index: 1;
+            }
+
+            .fetched-at {
+                position: absolute;
+                left: 8vw;
+                right: 8vw;
+                bottom: 3vh;
+                color: rgba(232, 245, 241, 0.82);
+                font-size: 18px;
+                font-weight: 600;
+                text-align: center;
+                z-index: 2;
+            }
+        </style>
+    </head>
+    <body>
+        <main class="announcement-stage">
+            <section class="announcement-slide active" aria-live="polite" aria-hidden="false">
+                <div class="announcement-copy">
+                    <div class="announcement-content">
+                        <div class="announcement-header">
+                            <div class="source-label">Dateline Announcements</div>
+                            <div class="category"></div>
+                            <h1 class="title">Loading announcements...</h1>
+                        </div>
+                        <div class="body-window"><p class="body"></p></div>
+                    </div>
+                </div>
+                <div class="footer-fade" aria-hidden="true"></div>
+                <div class="fetched-at">Fetched on: --</div>
+            </section>
+            <section class="announcement-slide" aria-live="polite" aria-hidden="true">
+                <div class="announcement-copy">
+                    <div class="announcement-content">
+                        <div class="announcement-header">
+                            <div class="source-label">Dateline Announcements</div>
+                            <div class="category"></div>
+                            <h1 class="title"></h1>
+                        </div>
+                        <div class="body-window"><p class="body"></p></div>
+                    </div>
+                </div>
+                <div class="footer-fade" aria-hidden="true"></div>
+                <div class="fetched-at">Fetched on: --</div>
+            </section>
+            <div id="transition-curtain" class="transition-curtain" aria-hidden="true"></div>
+        </main>
+        {% include "includes/breaking_news_ticker.html" %}
+
+        <script>
+            const SLIDE_PAUSED = {{ paused_mode|yesno:"true,false" }};
+            const DATELINE_VISIBLE = {{ dateline_config.is_visible|yesno:"true,false" }};
+            const WEATHER_VISIBLE = {{ weather_config.is_visible|yesno:"true,false" }};
+            const CALENDAR_VISIBLE = {{ calendar_slide_available|yesno:"true,false" }};
+            const GENERATED_SLIDE_COUNT = {{ dateline_config.generated_slide_count|default:3 }};
+            const ANNOUNCEMENT_DURATION = {{ dateline_config.duration_seconds|default:8 }} * 1000;
+            const ANNOUNCEMENT_TRANSITION = "{{ dateline_config.transition_type|default:'crossfade' }}";
+            const DATELINE_OVERFLOW_MODE = "{{ dateline_config.overflow_mode|default:'clip'|escapejs }}";
+            const DATELINE_SCROLL_SPEED = {{ dateline_config.scroll_speed|default:80 }};
+            const TRANSITION_DURATION = 900;
+            const CURTAIN_DURATION = TRANSITION_DURATION / 2;
+            const GET_JSON_URL = "{% url 'getjson' %}";
+            const WEATHER_URL = "{% url 'weather_view' %}";
+            const CALENDAR_URL = "{% url 'calendar_view' %}";
+            const SLIDESHOW_URL = "{% url 'slidedisplay' %}";
+            const COLOR_TRANSITIONS = {
+                fade_gray: "#7f7f7f",
+                fade_black: "#000000",
+                fade_white: "#ffffff",
+            };
+            const slides = Array.from(document.getElementsByClassName("announcement-slide"));
+            const curtain = document.getElementById("transition-curtain");
+
+            let selectedAnnouncements = [];
+            let announcementIndex = 0;
+            let activeSlideIndex = 0;
+            let announcementTimer = null;
+            let transitionInProgress = false;
+            let hasRenderedAnnouncement = false;
+            let fetchedOnLabel = "Fetched on: unavailable";
+
+            function redirectAfterDateline() {
+                window.clearTimeout(announcementTimer);
+                if (SLIDE_PAUSED) return;
+                if (WEATHER_VISIBLE) {
+                    window.location.href = WEATHER_URL;
+                    return;
+                }
+                if (CALENDAR_VISIBLE) {
+                    window.location.href = CALENDAR_URL;
+                    return;
+                }
+                window.location.href = {{ transit_dashboard_available|yesno:"true,false" }} ? "{% url 'transit_view' %}" : SLIDESHOW_URL;
+            }
+
+            function shuffleAnnouncements(announcements) {
+                const shuffled = announcements.slice();
+                for (let i = shuffled.length - 1; i > 0; i--) {
+                    const j = Math.floor(Math.random() * (i + 1));
+                    [shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]];
+                }
+                return shuffled;
+            }
+
+            function wait(ms) {
+                return new Promise((resolve) => window.setTimeout(resolve, ms));
+            }
+
+            function getSlideParts(slide) {
+                return {
+                    category: slide.querySelector(".category"),
+                    title: slide.querySelector(".title"),
+                    body: slide.querySelector(".body"),
+                    fetchedAt: slide.querySelector(".fetched-at"),
+                    copy: slide.querySelector(".announcement-copy"),
+                    content: slide.querySelector(".announcement-content"),
+                    bodyWindow: slide.querySelector(".body-window"),
+                };
+            }
+
+            function configureOverflow(slide) {
+                const parts = getSlideParts(slide);
+                slide.classList.remove("overflow-scroll", "overflow-scale");
+                parts.body.style.removeProperty("--body-scroll-distance");
+                parts.body.style.removeProperty("--body-scroll-duration");
+                parts.content.style.removeProperty("--fit-scale");
+                slide.dataset.bodyScrollDurationMs = "0";
+
+                if (DATELINE_OVERFLOW_MODE === "scroll") {
+                    slide.classList.add("overflow-scroll");
+                    const distance = Math.max(0, parts.body.scrollHeight - parts.bodyWindow.clientHeight);
+                    const scrollDuration = distance > 0 ? (distance / DATELINE_SCROLL_SPEED) * 1000 : 0;
+                    parts.body.style.setProperty("--body-scroll-distance", `${distance}px`);
+                    parts.body.style.setProperty("--body-scroll-duration", `${scrollDuration}ms`);
+                    slide.dataset.bodyScrollDurationMs = scrollDuration.toString();
+                } else if (DATELINE_OVERFLOW_MODE === "scale") {
+                    slide.classList.add("overflow-scale");
+                    const heightScale = parts.copy.clientHeight / Math.max(1, parts.content.scrollHeight);
+                    const widthScale = parts.copy.clientWidth / Math.max(1, parts.content.scrollWidth);
+                    parts.content.style.setProperty("--fit-scale", Math.min(1, heightScale, widthScale).toString());
+                }
+            }
+
+            function formatFetchedOn(value) {
+                if (!value) {
+                    return "Fetched on: unavailable";
+                }
+
+                const parsed = new Date(value);
+                if (Number.isNaN(parsed.getTime())) {
+                    return "Fetched on: unavailable";
+                }
+
+                return `Fetched on: ${parsed.toLocaleString([], {
+                    dateStyle: "medium",
+                    timeStyle: "medium",
+                })}`;
+            }
+
+            function activateSlide(slide) {
+                slide.classList.remove("incoming", "outgoing");
+                slide.classList.add("active");
+                slide.setAttribute("aria-hidden", "false");
+            }
+
+            function deactivateSlide(slide) {
+                slide.classList.remove("active", "incoming", "outgoing");
+                slide.setAttribute("aria-hidden", "true");
+            }
+
+            function populateAnnouncement(slide, announcement) {
+                const parts = getSlideParts(slide);
+                parts.category.textContent = announcement.category || "Dateline";
+                parts.title.textContent = announcement.title || "Untitled announcement";
+                parts.body.textContent = announcement.body || "";
+                parts.fetchedAt.textContent = fetchedOnLabel;
+                configureOverflow(slide);
+            }
+
+            function populateStatus(slide, message) {
+                const parts = getSlideParts(slide);
+                parts.category.textContent = "Dateline";
+                parts.title.textContent = message;
+                parts.body.textContent = "";
+                parts.fetchedAt.textContent = fetchedOnLabel;
+                slide.classList.remove("overflow-scroll", "overflow-scale");
+            }
+
+            function currentSlide() {
+                return slides[activeSlideIndex];
+            }
+
+            function inactiveSlide() {
+                return slides[(activeSlideIndex + 1) % slides.length];
+            }
+
+            function scheduleNextAnnouncement() {
+                window.clearTimeout(announcementTimer);
+                if (SLIDE_PAUSED) return;
+                const scrollDuration = Number(currentSlide()?.dataset.bodyScrollDurationMs || 0);
+                announcementTimer = window.setTimeout(() => {
+                    if (!transitionInProgress) {
+                        showNextAnnouncement();
+                    }
+                }, Math.max(ANNOUNCEMENT_DURATION, scrollDuration));
+            }
+
+            async function performTransition(fromSlide, toSlide) {
+                transitionInProgress = true;
+
+                if (ANNOUNCEMENT_TRANSITION === "crossfade") {
+                    toSlide.classList.add("incoming");
+                    toSlide.setAttribute("aria-hidden", "false");
+                    fromSlide.classList.remove("active");
+                    fromSlide.classList.add("outgoing");
+                    await wait(TRANSITION_DURATION);
+                    deactivateSlide(fromSlide);
+                    activateSlide(toSlide);
+                    transitionInProgress = false;
+                    return;
+                }
+
+                curtain.style.background = COLOR_TRANSITIONS[ANNOUNCEMENT_TRANSITION] || COLOR_TRANSITIONS.fade_black;
+                curtain.classList.add("visible");
+                await wait(CURTAIN_DURATION);
+                deactivateSlide(fromSlide);
+                activateSlide(toSlide);
+                curtain.classList.remove("visible");
+                await wait(CURTAIN_DURATION);
+                transitionInProgress = false;
+            }
+
+            async function showNextAnnouncement() {
+                if (announcementIndex >= selectedAnnouncements.length) {
+                    redirectAfterDateline();
+                    return;
+                }
+
+                if (!hasRenderedAnnouncement) {
+                    populateAnnouncement(currentSlide(), selectedAnnouncements[announcementIndex]);
+                    hasRenderedAnnouncement = true;
+                    announcementIndex++;
+                    scheduleNextAnnouncement();
+                    return;
+                }
+
+                const nextSlide = inactiveSlide();
+                populateAnnouncement(nextSlide, selectedAnnouncements[announcementIndex]);
+                announcementIndex++;
+                await performTransition(currentSlide(), nextSlide);
+                activeSlideIndex = slides.indexOf(nextSlide);
+                scheduleNextAnnouncement();
+            }
+
+            async function loadAnnouncements() {
+                    if (!DATELINE_VISIBLE && !SLIDE_PAUSED) {
+                    redirectAfterDateline();
+                    return;
+                }
+
+                try {
+                    const response = await fetch(GET_JSON_URL, { cache: "no-store" });
+                    if (!response.ok) {
+                        throw new Error(`HTTP error ${response.status}`);
+                    }
+
+                    const payload = await response.json();
+                    const announcements = Array.isArray(payload)
+                        ? payload
+                        : (Array.isArray(payload.announcements) ? payload.announcements : []);
+                    fetchedOnLabel = formatFetchedOn(Array.isArray(payload) ? null : payload.fetched_at);
+                    const validAnnouncements = announcements.filter(
+                        (announcement) => announcement && announcement.title
+                    );
+                    selectedAnnouncements = shuffleAnnouncements(validAnnouncements)
+                        .slice(0, GENERATED_SLIDE_COUNT);
+
+                    if (selectedAnnouncements.length === 0) {
+                        populateStatus(currentSlide(), "No Dateline announcements available.");
+                        if (!SLIDE_PAUSED) window.setTimeout(redirectAfterDateline, ANNOUNCEMENT_DURATION);
+                        return;
+                    }
+
+                    showNextAnnouncement();
+                } catch (error) {
+                    console.error("Error loading Dateline announcements:", error);
+                    populateStatus(currentSlide(), "Error loading Dateline announcements.");
+                    if (!SLIDE_PAUSED) window.setTimeout(redirectAfterDateline, ANNOUNCEMENT_DURATION);
+                }
+            }
+
+            window.addEventListener("load", loadAnnouncements);
+            window.addEventListener("beforeunload", () => window.clearTimeout(announcementTimer));
+        </script>
+    </body>
+</html>

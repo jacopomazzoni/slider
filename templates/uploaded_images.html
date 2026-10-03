@@ -1,0 +1,1651 @@
+{% extends "base.html" %}
+
+{% block title %}Slide Library{% endblock %}
+
+{% block content %}
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap');
+        
+        body {
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            margin: 0;
+            padding: 0;
+            background: #f5f5f5;
+        }
+        
+        .container {
+            max-width: 1200px;
+            margin: 40px auto;
+            padding: 20px;
+        }
+        
+        .upload-btn,
+        .home-link {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            min-height: 46px;
+            padding: 12px 22px;
+            background: var(--brand);
+            color: white;
+            text-decoration: none;
+            border-radius: 6px;
+            font-weight: 600;
+            transition: background 0.2s, border-color 0.2s;
+            border: 1px solid var(--brand);
+        }
+        
+        .upload-btn:hover,
+        .home-link:hover {
+            background: var(--brand-dark);
+            border-color: var(--brand-dark);
+        }
+
+        .generated-slide-panel {
+            background: #f8f9fa;
+            border: 1px solid #dee2e6;
+            border-radius: 8px;
+            padding: 20px;
+            margin-bottom: 30px;
+        }
+
+        .generated-slide-header {
+            display: flex;
+            justify-content: space-between;
+            gap: 20px;
+            align-items: flex-start;
+            margin-bottom: 18px;
+        }
+
+        .generated-slide-kicker {
+            color: #6c757d;
+            font-size: 12px;
+            font-weight: 700;
+            letter-spacing: 0.04em;
+            text-transform: uppercase;
+            margin-bottom: 6px;
+        }
+
+        .generated-slide-title {
+            color: var(--brand);
+            font-size: 20px;
+            font-weight: 700;
+            margin: 0;
+        }
+
+        .generated-toggle {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            color: var(--brand);
+            font-weight: 700;
+            white-space: nowrap;
+        }
+
+        .generated-toggle input {
+            width: 18px;
+            height: 18px;
+            accent-color: var(--brand);
+        }
+
+        .generated-settings-grid {
+            display: grid;
+            grid-template-columns: repeat(4, minmax(150px, 1fr)) auto;
+            gap: 16px;
+            align-items: end;
+        }
+
+        .dateline-settings-grid {
+            grid-template-columns: repeat(5, minmax(130px, 1fr)) auto;
+        }
+
+        .generated-field label {
+            display: block;
+            color: var(--brand);
+            font-weight: 600;
+            margin-bottom: 8px;
+        }
+
+        .generated-field input,
+        .generated-field select {
+            width: 100%;
+            padding: 10px;
+            border: 1px solid #dee2e6;
+            border-radius: 6px;
+            font-family: 'Inter', sans-serif;
+            font-size: 14px;
+            background: white;
+        }
+
+        .generated-field .generated-checkbox {
+            display: inline-flex;
+            align-items: center;
+            gap: 10px;
+            min-height: 44px;
+            color: #344054;
+            font-weight: 600;
+        }
+
+        .generated-field .generated-checkbox input {
+            width: 18px;
+            height: 18px;
+            accent-color: var(--brand);
+        }
+
+        .generated-field .generated-color-input {
+            min-height: 44px;
+            padding: 4px;
+            cursor: pointer;
+        }
+
+        .generated-field-wide {
+            grid-column: 1 / -1;
+        }
+
+        .generated-field-hint {
+            grid-column: 1 / -1;
+            margin: -8px 0 0;
+            color: #667085;
+            font-size: 13px;
+            line-height: 1.5;
+        }
+
+        .transit-route-options {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(190px, 1fr));
+            gap: 8px 16px;
+            padding: 12px;
+            border: 1px solid #d8e0dc;
+            border-radius: 6px;
+            max-height: 230px;
+            overflow: auto;
+        }
+
+        .transit-route-options label {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            color: #34443c;
+            font-weight: 500;
+            min-width: 0;
+        }
+
+        .transit-route-options input {
+            width: 16px;
+            height: 16px;
+            accent-color: var(--brand);
+            flex: 0 0 auto;
+        }
+
+        .transit-route-choice > span:last-child { overflow-wrap: anywhere; }
+        .transit-route-marker { position: relative; display: inline-block; width: 30px; height: 32px; flex: 0 0 30px; }
+        .transit-route-arrow { position: absolute; z-index: 0; top: -1px; left: 5px; width: 20px; height: 32px; background: var(--route-color); clip-path: polygon(50% 0, 100% 82%, 50% 68%, 0 82%); filter: drop-shadow(0 1px 2px #26362e88); }
+        .transit-route-dot { position: absolute; z-index: 1; top: 5px; left: 2px; width: 26px; height: 26px; display: grid; place-items: center; box-sizing: border-box; border: 2px solid white; border-radius: 50%; background: var(--route-color); color: var(--route-text); box-shadow: 0 1px 5px #26362e66; font-size: 8px; font-weight: 800; }
+
+        .transit-panel-options {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 12px 20px;
+            align-items: center;
+        }
+
+        .transit-panel-options label {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            color: #34443c;
+            font-weight: 500;
+        }
+
+        .transit-panel-options input { width: 16px; height: 16px; accent-color: var(--brand); }
+
+        .transit-adjustment input[type="range"] {
+            width: 100%;
+            height: 24px;
+            margin: 2px 0 0;
+            padding: 0;
+            accent-color: var(--brand);
+            background: transparent;
+        }
+
+        .transit-adjustment output {
+            float: right;
+            color: #34443c;
+            font-variant-numeric: tabular-nums;
+        }
+
+        .transit-view-controls { grid-column: 1 / -1; display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 18px; }
+        .transit-animation-group { grid-column: 1 / -1; min-width: 0; margin: 4px 0 0; padding: 16px 0 0; border: 0; border-top: 1px solid #d8e0dc; }
+        .transit-animation-group > legend { padding: 0 10px 0 0; color: var(--brand); font-size: 16px; font-weight: 700; }
+        .transit-animation-heading { display: flex; align-items: center; gap: 10px; margin: 0 0 14px; color: #34443c; font-weight: 600; }
+        .transit-animation-heading input { width: 18px; height: 18px; margin: 0; accent-color: var(--brand); }
+        .transit-animation-fields { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 16px; }
+        .transit-animation-fields [disabled] { opacity: .48; }
+        .transit-timing-field output { float: right; color: #34443c; font-variant-numeric: tabular-nums; }
+        .transit-settings-footer { display: flex; flex-wrap: wrap; align-items: center; gap: 12px 20px; margin-top: 18px; }
+        .transit-settings-footer .generated-field-hint { flex: 1 1 420px; min-width: 220px; margin: 0; }
+        .transit-settings-footer .generated-save-btn { flex: 0 0 auto; min-width: 220px; }
+        .transit-view-group { min-width: 0; margin: 0; padding: 14px 0 0; border: 0; border-top: 1px solid #d8e0dc; }
+        .transit-view-group legend { padding: 0 8px 0 0; color: var(--brand); font-size: 15px; font-weight: 700; }
+        .transit-view-sliders { display: grid; grid-template-columns: 1fr; gap: 12px; }
+        @media (max-width: 760px) { .transit-view-controls, .transit-animation-fields { grid-template-columns: 1fr; } .transit-settings-footer .generated-save-btn { width: 100%; } }
+
+        .generated-save-btn {
+            padding: 11px 16px;
+            background: var(--brand);
+            color: white;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            font-family: 'Inter', sans-serif;
+            font-weight: 700;
+            transition: background 0.2s;
+        }
+
+        .generated-save-btn:hover {
+            background: var(--brand-dark);
+        }
+
+        .reorder-note {
+            margin: 0 0 20px;
+            color: #6c757d;
+            font-size: 14px;
+            line-height: 1.5;
+            text-align: center;
+        }
+        
+        .table {
+            width: 100%;
+            border-collapse: collapse;
+            background: #fff;
+            border-radius: 8px;
+            overflow: hidden;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+        }
+        
+        .table thead {
+            background: #f8f9fa;
+        }
+        
+        .table th {
+            padding: 15px;
+            text-align: left;
+            font-weight: 600;
+            color: var(--brand);
+            border-bottom: 2px solid #dee2e6;
+        }
+        
+        .table td {
+            padding: 15px;
+            border-bottom: 1px solid #dee2e6;
+            vertical-align: top;
+        }
+        
+        .table tbody tr:hover {
+            background: #f8f9fa;
+        }
+
+        .slide-row.dragging {
+            opacity: 0.45;
+        }
+
+        .slide-row.drop-target {
+            box-shadow: inset 0 2px 0 var(--brand);
+        }
+        
+        .table tbody tr:last-child td {
+            border-bottom: none;
+        }
+        
+        .table img,
+        .table video {
+            border-radius: 6px;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+        }
+        
+        .content-cell {
+            max-width: 500px;
+        }
+        
+        .content-title {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            padding: 0;
+            border: none;
+            background: none;
+            font-weight: 700;
+            color: var(--brand);
+            margin: 0 0 10px;
+            font-size: 16px;
+            cursor: pointer;
+            text-align: left;
+            font-family: 'Inter', sans-serif;
+        }
+
+        .content-meta {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+            margin: 0 0 10px;
+        }
+
+        .content-badge {
+            display: inline-flex;
+            align-items: center;
+            min-height: 28px;
+            padding: 4px 10px;
+            border-radius: 999px;
+            background: #e8f5f1;
+            color: var(--brand);
+            font-size: 12px;
+            font-weight: 700;
+        }
+
+        .color-chip {
+            width: 18px;
+            height: 18px;
+            border-radius: 999px;
+            border: 1px solid rgba(0, 0, 0, 0.12);
+        }
+
+        .content-description {
+            color: #666;
+            line-height: 1.6;
+            font-size: 14px;
+            margin-top: 8px;
+            padding: 10px;
+            background: #f8f9fa;
+            border-radius: 4px;
+            max-height: 200px;
+            overflow-y: auto;
+        }
+        
+        .content-description:empty {
+            display: none;
+        }
+        
+        /* Style the HTML content */
+        .content-description p {
+            margin: 0 0 8px 0;
+        }
+        
+        .content-description ul,
+        .content-description ol {
+            margin: 8px 0;
+            padding-left: 20px;
+        }
+        
+        .content-description li {
+            margin: 4px 0;
+        }
+        
+        .content-description strong {
+            color: var(--brand);
+        }
+
+        .content-code {
+            margin-top: 8px;
+            padding: 12px;
+            background: #0f172a;
+            color: #e2e8f0;
+            border-radius: 6px;
+            overflow-x: auto;
+            font-size: 12px;
+            line-height: 1.6;
+            white-space: pre-wrap;
+            word-break: break-word;
+        }
+
+        .title-edit-shell {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+
+        .title-edit-form {
+            display: none;
+            gap: 8px;
+            align-items: center;
+            flex-wrap: wrap;
+        }
+
+        .title-edit-shell.is-editing .title-edit-form {
+            display: flex;
+        }
+
+        .title-edit-shell.is-editing .content-title {
+            display: none;
+        }
+
+        .title-input {
+            min-width: 220px;
+            flex: 1 1 220px;
+            min-height: 40px;
+            padding: 8px 10px;
+            border: 1px solid #dee2e6;
+            border-radius: 6px;
+            font-family: 'Inter', sans-serif;
+            font-size: 14px;
+        }
+
+        .title-save-btn,
+        .title-cancel-btn {
+            min-height: 40px;
+            padding: 8px 12px;
+            border-radius: 6px;
+            border: 1px solid #dee2e6;
+            font-family: 'Inter', sans-serif;
+            font-weight: 600;
+            cursor: pointer;
+        }
+
+        .title-save-btn {
+            background: var(--brand);
+            border-color: var(--brand);
+            color: white;
+        }
+
+        .title-cancel-btn {
+            background: white;
+            color: var(--brand);
+        }
+
+        .content-title-icon {
+            display: inline-flex;
+            width: 16px;
+            height: 16px;
+            opacity: 0.75;
+        }
+        
+        .content-link {
+            display: inline-block;
+            margin-top: 10px;
+            padding: 6px 12px;
+            background: var(--brand);
+            color: white;
+            text-decoration: none;
+            border-radius: 4px;
+            font-size: 13px;
+            font-weight: 600;
+            transition: background 0.2s;
+        }
+        
+        .content-link:hover {
+            background: var(--brand-dark);
+        }
+        
+        .custom-content-placeholder {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            width: 250px;
+            height: 150px;
+            background: #f8f9fa;
+            border: 2px dashed #dee2e6;
+            border-radius: 6px;
+            color: #999;
+            font-weight: 600;
+        }
+
+        .custom-content-placeholder.html-placeholder {
+            border-style: solid;
+            background: #0f172a;
+            color: #e2e8f0;
+            font-family: "SFMono-Regular", Consolas, "Liberation Mono", monospace;
+            font-size: 30px;
+            letter-spacing: 0;
+        }
+
+        .custom-content-placeholder.html-placeholder span {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            padding: 10px 14px;
+            border: 1px solid rgba(226, 232, 240, 0.35);
+            border-radius: 6px;
+        }
+
+        .custom-content-placeholder.google-slides-placeholder {
+            border-style: solid;
+            background: linear-gradient(180deg, #f8fbff 0%, #eef4ff 100%);
+            color: #185abc;
+            font-size: 18px;
+            font-weight: 700;
+        }
+
+        .custom-content-placeholder.google-slides-placeholder span {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            min-height: 44px;
+            padding: 8px 14px;
+            border: 1px solid rgba(24, 90, 188, 0.18);
+            border-radius: 6px;
+            background: rgba(255, 255, 255, 0.82);
+        }
+        
+        .delete-btn {
+            padding: 8px 16px;
+            background: #dc3545;
+            color: white;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            font-family: 'Inter', sans-serif;
+            font-weight: 600;
+            transition: background 0.2s;
+        }
+        
+        .delete-btn:hover {
+            background: #c82333;
+        }
+
+        .action-stack {
+            display: grid;
+            gap: 10px;
+            align-content: start;
+        }
+
+        .edit-btn {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            min-height: 40px;
+            padding: 8px 12px;
+            border: 1px solid var(--brand);
+            border-radius: 6px;
+            background: white;
+            color: var(--brand);
+            text-decoration: none;
+            font-weight: 700;
+            font-size: 14px;
+        }
+
+        .edit-btn:hover {
+            background: color-mix(in srgb, var(--brand) 8%, white);
+        }
+
+        .action-note {
+            color: #667085;
+            font-size: 12px;
+            line-height: 1.45;
+        }
+
+        .playback-form {
+            display: flex;
+            gap: 8px;
+            align-items: center;
+            flex-wrap: wrap;
+        }
+
+        .duration-input,
+        .transition-select {
+            min-height: 40px;
+            padding: 8px;
+            border: 1px solid #dee2e6;
+            border-radius: 6px;
+            font-family: 'Inter', sans-serif;
+            font-size: 14px;
+            background: white;
+        }
+
+        .duration-input {
+            width: 85px;
+        }
+
+        .transition-select {
+            min-width: 170px;
+        }
+
+        .save-duration-btn {
+            padding: 8px 12px;
+            background: var(--brand);
+            color: white;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            font-family: 'Inter', sans-serif;
+            font-weight: 600;
+            transition: background 0.2s;
+        }
+
+        .save-duration-btn:hover {
+            background: var(--brand-dark);
+        }
+
+        .visibility-form {
+            display: grid;
+            gap: 8px;
+        }
+
+        .visibility-btn {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            min-height: 40px;
+            padding: 8px 12px;
+            border: 1px solid var(--brand);
+            border-radius: 6px;
+            background: white;
+            color: var(--brand);
+            text-decoration: none;
+            font-family: 'Inter', sans-serif;
+            font-weight: 700;
+            font-size: 14px;
+            cursor: pointer;
+        }
+
+        .visibility-btn.is-active {
+            background: color-mix(in srgb, var(--brand) 12%, white);
+        }
+
+        .visibility-btn:hover {
+            background: color-mix(in srgb, var(--brand) 8%, white);
+        }
+
+        .drag-cell {
+            width: 52px;
+            text-align: center;
+        }
+
+        .drag-handle {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            width: 36px;
+            height: 36px;
+            padding: 0;
+            border: 1px solid #dee2e6;
+            border-radius: 6px;
+            background: white;
+            color: var(--brand);
+            cursor: grab;
+        }
+
+        .drag-handle:active {
+            cursor: grabbing;
+        }
+
+        .drag-handle svg {
+            width: 18px;
+            height: 18px;
+        }
+
+        .messages {
+            margin-bottom: 20px;
+        }
+
+        .alert {
+            padding: 12px 20px;
+            border-radius: 6px;
+            margin-bottom: 12px;
+        }
+
+        .alert-success {
+            background: #d4edda;
+            color: #155724;
+            border: 1px solid #c3e6cb;
+        }
+
+        .alert-error {
+            background: #f8d7da;
+            color: #721c24;
+            border: 1px solid #f5c6cb;
+        }
+        
+        .no-images {
+            text-align: center;
+            color: #666;
+            padding: 40px;
+            background: #f8f9fa;
+            border-radius: 8px;
+            margin-top: 20px;
+        }
+        
+        .page-actions {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            gap: 12px;
+            flex-wrap: wrap;
+            margin-top: 30px;
+        }
+
+        .container {
+            width: min(100% - 32px, 1540px);
+            max-width: 1540px;
+            margin: 28px auto;
+            padding: 28px;
+        }
+
+        .generated-slide-panel {
+            background: var(--surface);
+            border-color: var(--border);
+            border-radius: 6px;
+            box-shadow: var(--shadow);
+            padding: 22px;
+            margin-bottom: 20px;
+        }
+
+        .generated-slide-kicker,
+        .action-note,
+        .generated-field-hint { color: var(--muted); }
+
+        .generated-slide-title { color: var(--brand); }
+
+        .table {
+            border: 1px solid var(--border);
+            border-radius: 6px;
+            box-shadow: var(--shadow);
+        }
+
+        .table thead { background: var(--brand-faint); }
+        .table th { color: var(--brand-dark); text-align: left; cursor: default; }
+        .table td { border-color: var(--border); }
+        .table tbody tr:hover { background: #f8fbf9; }
+
+        .generated-panel-actions {
+            display: flex;
+            align-items: center;
+            justify-content: flex-end;
+            gap: 12px;
+            flex-wrap: wrap;
+        }
+
+        .paused-preview-link {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            min-height: 36px;
+            padding: 7px 11px;
+            border: 1px solid var(--brand);
+            border-radius: 5px;
+            background: white;
+            color: var(--brand);
+            font-size: 12px;
+            font-weight: 700;
+            text-decoration: none;
+            white-space: nowrap;
+        }
+
+        .paused-preview-link:hover { background: var(--brand-faint); }
+
+        .generated-field input:focus,
+        .generated-field select:focus,
+        .duration-input:focus,
+        .transition-select:focus,
+        .title-input:focus {
+            outline: 2px solid color-mix(in srgb, var(--brand) 35%, transparent);
+            outline-offset: 1px;
+            border-color: var(--brand);
+        }
+
+        .content-badge {
+            border-radius: 4px;
+            background: var(--brand-faint);
+            color: var(--brand-dark);
+        }
+
+        .content-description {
+            background: var(--surface-muted);
+            border: 1px solid var(--border);
+            color: var(--text);
+        }
+
+        .no-images {
+            border: 1px solid var(--border);
+            border-radius: 6px;
+            background: var(--surface);
+            color: var(--muted);
+        }
+
+        .drag-handle { border-color: var(--border); }
+        .delete-btn { border-radius: 5px; }
+        .duration-input, .transition-select, .title-input { color: var(--text); }
+
+        @media (max-width: 760px) {
+            .container { width: 100%; margin: 12px auto; padding: 16px; }
+            .generated-slide-panel { padding: 16px; }
+            .generated-panel-actions { justify-content: flex-start; }
+        }
+
+        @media (max-width: 760px) {
+            .generated-slide-header,
+            .generated-settings-grid {
+                grid-template-columns: 1fr;
+                display: grid;
+            }
+
+            .generated-toggle {
+                white-space: normal;
+            }
+        }
+    </style>
+    <div class="container">
+        {% if messages %}
+            <div class="messages">
+                {% for message in messages %}
+                    <div class="alert alert-{{ message.tags }}">
+                        {{ message }}
+                    </div>
+                {% endfor %}
+            </div>
+        {% endif %}
+
+        <div class="page-header">
+            <h1 class="page-title">
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect>
+                    <circle cx="8.5" cy="8.5" r="1.5"></circle>
+                    <polyline points="21 15 16 10 5 21"></polyline>
+                </svg>
+                Slide Library
+            </h1>
+            <p class="page-subtitle">Drag the handles in the table below to change slideshow order. Saved order is used throughout the display.</p>
+        </div>
+        
+        <section class="generated-slide-panel" aria-labelledby="dateline-settings-title">
+            <form action="{% url 'update_generated_slide_config' dateline_config.scraper_name %}" method="POST">
+                {% csrf_token %}
+                <div class="generated-slide-header">
+                    <div>
+                        <div class="generated-slide-kicker">Generated Slide Source</div>
+                        <h2 id="dateline-settings-title" class="generated-slide-title">Dateline Announcements</h2>
+                    </div>
+                    <div class="generated-panel-actions">
+                        <a class="paused-preview-link" href="{% url 'dateline_paused' %}" target="_blank" rel="noopener">Open paused view ↗</a>
+                        <label class="generated-toggle">
+                            <input type="checkbox" name="is_visible" {% if dateline_config.is_visible %}checked{% endif %}>
+                            Show in Display
+                        </label>
+                    </div>
+                </div>
+                <div class="generated-settings-grid dateline-settings-grid">
+                    <div class="generated-field">
+                        <label for="id_generated_slide_count">Slides Generated</label>
+                        <input id="id_generated_slide_count" type="number" name="generated_slide_count" min="1" max="20" step="1" value="{{ dateline_config.generated_slide_count|default:3 }}" required>
+                    </div>
+                    <div class="generated-field">
+                        <label for="id_dateline_duration_seconds">Seconds Per Slide</label>
+                        <input id="id_dateline_duration_seconds" type="number" name="duration_seconds" min="1" max="3600" step="1" value="{{ dateline_config.duration_seconds|default:8 }}" required>
+                    </div>
+                    <div class="generated-field">
+                        <label for="id_dateline_transition_type">Transition</label>
+                        <select id="id_dateline_transition_type" name="transition_type">
+                            {% for value, label in slide_transition_choices %}
+                                <option value="{{ value }}" {% if value == dateline_config.transition_type|default:'crossfade' %}selected{% endif %}>{{ label }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <div class="generated-field">
+                        <label for="id_dateline_overflow_mode">Text Overflow</label>
+                        <select id="id_dateline_overflow_mode" name="overflow_mode">
+                            {% for value, label in dateline_config.OVERFLOW_MODE_CHOICES %}
+                                <option value="{{ value }}" {% if value == dateline_config.overflow_mode|default:'clip' %}selected{% endif %}>{{ label }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <div class="generated-field">
+                        <label for="id_dateline_scroll_speed">Body Scroll Speed (px/s)</label>
+                        <input id="id_dateline_scroll_speed" type="number" name="scroll_speed" min="10" max="1000" step="10" value="{{ dateline_config.scroll_speed|default:80 }}" required>
+                    </div>
+                    <button type="submit" class="generated-save-btn">Save Settings</button>
+                </div>
+            </form>
+        </section>
+
+        <section class="generated-slide-panel" aria-labelledby="weather-settings-title">
+            <form action="{% url 'update_weather_slide_config' %}" method="POST">
+                {% csrf_token %}
+                <div class="generated-slide-header">
+                    <div>
+                        <div class="generated-slide-kicker">Dashboard Slide Source</div>
+                        <h2 id="weather-settings-title" class="generated-slide-title">Weather Dashboard</h2>
+                    </div>
+                    <div class="generated-panel-actions">
+                        <a class="paused-preview-link" href="{% url 'weather_view_paused' %}" target="_blank" rel="noopener">Open paused view ↗</a>
+                        <label class="generated-toggle">
+                            <input type="checkbox" name="is_visible" {% if weather_config.is_visible %}checked{% endif %}>
+                            Show in Display
+                        </label>
+                    </div>
+                </div>
+                <div class="generated-settings-grid">
+                    <div class="generated-field">
+                        <label for="id_weather_overlay_source">Weather Overlay</label>
+                        <select id="id_weather_overlay_source" name="overlay_source" required>
+                            {% for value, label in weather_overlay_sources %}
+                                <option value="{{ value }}" {% if value == weather_config.overlay_source %}selected{% endif %}>{{ label }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <p class="generated-field-hint">RainViewer supplies precipitation radar only. Choose NASA GIBS for satellite imagery showing cloud cover.</p>
+                    <div class="generated-field">
+                        <label for="id_weather_map_layer">Map Layer</label>
+                        <select id="id_weather_map_layer" name="map_layer" required>
+                            {% for value, label in weather_map_layers %}
+                                <option value="{{ value }}" {% if value == weather_config.map_layer %}selected{% endif %}>{{ label }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <div class="generated-field">
+                        <label for="id_weather_duration_seconds">Seconds On Screen</label>
+                        <input id="id_weather_duration_seconds" type="number" name="duration_seconds" min="1" max="3600" step="1" value="{{ weather_config.duration_seconds|default:24 }}" required>
+                    </div>
+                    <button type="submit" class="generated-save-btn">Save Settings</button>
+                </div>
+            </form>
+        </section>
+
+        <section class="generated-slide-panel" aria-labelledby="calendar-settings-title">
+            <form action="{% url 'update_calendar_slide_config' %}" method="POST">
+                {% csrf_token %}
+                <div class="generated-slide-header">
+                    <div>
+                        <div class="generated-slide-kicker">Dashboard Slide Source</div>
+                        <h2 id="calendar-settings-title" class="generated-slide-title">Google Calendar</h2>
+                    </div>
+                    <div class="generated-panel-actions">
+                        <a class="paused-preview-link" href="{% url 'calendar_view_paused' %}" target="_blank" rel="noopener">Open paused view ↗</a>
+                        <label class="generated-toggle">
+                            <input type="checkbox" name="is_visible" {% if calendar_config.is_visible %}checked{% endif %}>
+                            Show in Display
+                        </label>
+                    </div>
+                </div>
+                <div class="generated-settings-grid">
+                    <div class="generated-field generated-field-wide">
+                        <label for="id_calendar_public_url">Public Calendar URL</label>
+                        <input id="id_calendar_public_url" type="url" name="public_url" value="{{ calendar_config.public_url }}" placeholder="https://calendar.google.com/calendar/embed?..." autocomplete="off">
+                    </div>
+                    <div class="generated-field">
+                        <label for="id_calendar_duration_seconds">Seconds On Screen</label>
+                        <input id="id_calendar_duration_seconds" type="number" name="duration_seconds" min="1" max="3600" step="1" value="{{ calendar_config.duration_seconds|default:30 }}" required>
+                    </div>
+                    <button type="submit" class="generated-save-btn">Save Settings</button>
+                </div>
+            </form>
+        </section>
+
+        <section class="generated-slide-panel" aria-labelledby="transit-settings-title">
+            <form id="transit-dashboard-form" action="{% url 'update_transit_dashboard_config' %}" method="POST">
+                {% csrf_token %}
+                <div class="generated-slide-header">
+                    <div>
+                        <div class="generated-slide-kicker">Dashboard Slide Source</div>
+                        <h2 id="transit-settings-title" class="generated-slide-title">Campus Transit</h2>
+                    </div>
+                    <div class="generated-panel-actions">
+                        <a class="paused-preview-link" href="{% url 'transit_view_paused' %}" target="_blank" rel="noopener">Open paused view ↗</a>
+                        <label class="generated-toggle">
+                            <input type="checkbox" name="is_visible" {% if transit_config.is_visible %}checked{% endif %}>
+                            Show in Display
+                        </label>
+                    </div>
+                </div>
+                <div class="generated-settings-grid">
+                    <div class="generated-field">
+                        <label for="id_transit_duration_seconds">Seconds On Screen</label>
+                        <input id="id_transit_duration_seconds" type="number" name="duration_seconds" min="1" max="3600" step="1" value="{{ transit_config.duration_seconds|default:30 }}" required>
+                    </div>
+                    <div class="generated-field">
+                        <label for="id_transit_map_layer">Map Layer</label>
+                        <select id="id_transit_map_layer" name="map_layer" data-selected="{{ transit_config.map_layer }}">
+                            <option value="{{ transit_config.map_layer }}">{{ transit_config.map_layer }}</option>
+                        </select>
+                    </div>
+                    <div class="generated-field transit-adjustment">
+                        <label for="id_transit_route_opacity_percent">Route opacity <output id="transit_route_opacity_value">{{ transit_config.route_opacity_percent }}%</output></label>
+                        <input id="id_transit_route_opacity_percent" type="range" name="route_opacity_percent" min="0" max="100" step="5" value="{{ transit_config.route_opacity_percent }}" aria-label="Transit route opacity" required>
+                    </div>
+                    <fieldset class="transit-animation-group">
+                        <legend>Map Zoom Animation</legend>
+                        <label class="transit-animation-heading">
+                            <input id="id_transit_animation_enabled" type="checkbox" name="animation_enabled" {% if transit_config.animation_enabled %}checked{% endif %}>
+                            Animate from campus close-up to wider area
+                        </label>
+                        <div class="transit-animation-fields">
+                            <div class="generated-field transit-adjustment transit-timing-field" data-animation-control>
+                                <label for="id_transit_initial_delay_seconds">Initial delay <output id="transit_initial_delay_value">{{ transit_config.initial_delay_seconds }} sec</output></label>
+                                <input id="id_transit_initial_delay_seconds" type="range" name="initial_delay_seconds" min="0" max="20" step="1" value="{{ transit_config.initial_delay_seconds }}" required>
+                            </div>
+                            <div class="generated-field transit-adjustment transit-timing-field" data-animation-control>
+                                <label for="id_transit_animation_end_offset_seconds">End offset <output id="transit_end_offset_value">{{ transit_config.animation_end_offset_seconds }} sec</output></label>
+                                <input id="id_transit_animation_end_offset_seconds" type="range" name="animation_end_offset_seconds" min="0" max="20" step="1" value="{{ transit_config.animation_end_offset_seconds }}" required>
+                            </div>
+                            <div class="generated-field" data-animation-control>
+                                <label for="id_transit_animation_easing">Zoom easing</label>
+                                <select id="id_transit_animation_easing" name="animation_easing">
+                                    <option value="gentle" {% if transit_config.animation_easing == 'gentle' %}selected{% endif %}>Gentle</option>
+                                    <option value="smooth" {% if transit_config.animation_easing == 'smooth' %}selected{% endif %}>Smooth</option>
+                                    <option value="brisk" {% if transit_config.animation_easing == 'brisk' %}selected{% endif %}>Direct</option>
+                                </select>
+                            </div>
+                        </div>
+                        <div class="transit-view-controls">
+                        <fieldset class="transit-view-group">
+                            <legend>Initial View · Campus Close-up</legend>
+                            <div class="transit-view-sliders">
+                                <div class="generated-field transit-adjustment">
+                                    <label for="id_transit_initial_zoom_offset">Zoom offset <output id="transit_initial_zoom_value">0</output></label>
+                                    <input id="id_transit_initial_zoom_offset" type="range" name="initial_zoom_offset" min="-5" max="5" step="1" value="{{ transit_config.initial_zoom_offset }}">
+                                </div>
+                                <div class="generated-field transit-adjustment">
+                                    <label for="id_transit_initial_x_offset">X-axis offset <output id="transit_initial_x_value">0 m</output></label>
+                                    <input id="id_transit_initial_x_offset" type="range" name="initial_x_offset_meters" min="-5000" max="5000" step="100" value="{{ transit_config.initial_x_offset_meters }}">
+                                </div>
+                                <div class="generated-field transit-adjustment">
+                                    <label for="id_transit_initial_y_offset">Y-axis offset <output id="transit_initial_y_value">0 m</output></label>
+                                    <input id="id_transit_initial_y_offset" type="range" name="initial_y_offset_meters" min="-5000" max="5000" step="100" value="{{ transit_config.initial_y_offset_meters }}">
+                                </div>
+                            </div>
+                        </fieldset>
+                        <fieldset class="transit-view-group" data-animation-control>
+                            <legend>Final View · Wider Area</legend>
+                            <div class="transit-view-sliders">
+                                <div class="generated-field transit-adjustment">
+                                    <label for="id_transit_zoom_offset">Zoom offset <output id="transit_zoom_value">0</output></label>
+                                    <input id="id_transit_zoom_offset" type="range" name="zoom_offset" min="-5" max="5" step="1" value="{{ transit_config.zoom_offset }}">
+                                </div>
+                                <div class="generated-field transit-adjustment">
+                                    <label for="id_transit_x_offset">X-axis offset <output id="transit_x_value">0 m</output></label>
+                                    <input id="id_transit_x_offset" type="range" name="x_offset_meters" min="-5000" max="5000" step="100" value="{{ transit_config.x_offset_meters }}">
+                                </div>
+                                <div class="generated-field transit-adjustment">
+                                    <label for="id_transit_y_offset">Y-axis offset <output id="transit_y_value">0 m</output></label>
+                                    <input id="id_transit_y_offset" type="range" name="y_offset_meters" min="-5000" max="5000" step="100" value="{{ transit_config.y_offset_meters }}">
+                                </div>
+                            </div>
+                        </fieldset>
+                        </div>
+                    </fieldset>
+                    <div class="generated-field generated-field-wide">
+                        <label>Routes Available in Dashboard</label>
+                        <div class="transit-route-options">
+                            {% for route in transit_route_catalog %}
+                                <label class="transit-route-choice" style="--route-color: {{ route.color }}; --route-text: #ffffff">
+                                    <input type="checkbox" name="selected_routes" value="{{ route.pk }}" {% if route.pk in transit_selected_route_ids %}checked{% endif %}>
+                                    <span class="transit-route-marker" aria-hidden="true"><span class="transit-route-arrow"></span><span class="transit-route-dot">{{ route.code }}</span></span>
+                                    <span>{{ route.code }} · {{ route.name }}</span>
+                                </label>
+                            {% empty %}
+                                <p>Manage the route catalog in Django admin.</p>
+                            {% endfor %}
+                        </div>
+                    </div>
+                    <div class="generated-field generated-field-wide">
+                        <label>Side Panel Sections</label>
+                        <div class="transit-panel-options">
+                            <label><input type="checkbox" name="show_incoming_buses" {% if transit_config.show_incoming_buses %}checked{% endif %}> Next incoming buses</label>
+                            <label><input type="checkbox" name="show_service_alerts" {% if transit_config.show_service_alerts %}checked{% endif %}> Service alerts</label>
+                        </div>
+                    </div>
+                    <div class="generated-field generated-field-wide">
+                        <label for="id_transit_side_panel_order">Side Panel Order</label>
+                        <select id="id_transit_side_panel_order" name="side_panel_order">
+                            <option value="incoming_first" {% if transit_config.side_panel_order == 'incoming_first' %}selected{% endif %}>Next incoming buses first</option>
+                            <option value="alerts_first" {% if transit_config.side_panel_order == 'alerts_first' %}selected{% endif %}>Service alerts first</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="transit-settings-footer">
+                    <button type="submit" class="generated-save-btn">Save Transit Settings</button>
+                    <p class="generated-field-hint">Route geometry, colors, and inbound/outbound labels follow OCCT’s live route feed. Choose which routes appear in the viewer here.</p>
+                </div>
+            </form>
+        </section>
+
+        <section class="generated-slide-panel" aria-labelledby="empty-display-settings-title">
+            <form action="{% url 'update_empty_display_config' %}" method="POST">
+                {% csrf_token %}
+                <div class="generated-slide-header">
+                    <div>
+                        <div class="generated-slide-kicker">Slideshow Fallback</div>
+                        <h2 id="empty-display-settings-title" class="generated-slide-title">When No Uploaded Slides Exist</h2>
+                    </div>
+                </div>
+                <div class="generated-settings-grid">
+                    <div class="generated-field generated-field-wide">
+                        <label for="id_empty_display_mode">Display</label>
+                        <select id="id_empty_display_mode" name="mode">
+                            {% for value, label in empty_display_choices %}
+                                <option value="{{ value }}" {% if value == empty_display_config.mode %}selected{% endif %}>{{ label }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <button type="submit" class="generated-save-btn">Save Settings</button>
+                </div>
+            </form>
+        </section>
+
+        <section class="generated-slide-panel" aria-labelledby="breaking-news-ticker-title">
+            <form action="{% url 'update_breaking_news_ticker_config' %}" method="POST">
+                {% csrf_token %}
+                <div class="generated-slide-header">
+                    <div>
+                        <div class="generated-slide-kicker">Persistent Overlay</div>
+                        <h2 id="breaking-news-ticker-title" class="generated-slide-title">Breaking News Ticker</h2>
+                    </div>
+                </div>
+                <div class="generated-settings-grid">
+                    <div class="generated-field">
+                        <label for="id_breaking_news_mode">Ticker</label>
+                        <select id="id_breaking_news_mode" name="mode">
+                            <option value="off" {% if breaking_news_ticker_config.mode == 'off' %}selected{% endif %}>Off</option>
+                            <option value="on" {% if breaking_news_ticker_config.mode == 'on' %}selected{% endif %}>On</option>
+                        </select>
+                    </div>
+                    <div class="generated-field">
+                        <label for="id_breaking_news_scroll_speed">Scroll Speed (px/sec)</label>
+                        <input
+                            id="id_breaking_news_scroll_speed"
+                            type="number"
+                            name="scroll_speed"
+                            min="20"
+                            max="400"
+                            step="5"
+                            value="{{ breaking_news_ticker_config.scroll_speed|default:110 }}"
+                            required>
+                    </div>
+                    <div class="generated-field">
+                        <label for="id_breaking_news_font_family">Font</label>
+                        <select id="id_breaking_news_font_family" name="font_family">
+                            <option value="system" {% if breaking_news_ticker_config.font_family == 'system' %}selected{% endif %}>System Sans</option>
+                            <option value="arial" {% if breaking_news_ticker_config.font_family == 'arial' %}selected{% endif %}>Arial</option>
+                            <option value="verdana" {% if breaking_news_ticker_config.font_family == 'verdana' %}selected{% endif %}>Verdana</option>
+                            <option value="trebuchet" {% if breaking_news_ticker_config.font_family == 'trebuchet' %}selected{% endif %}>Trebuchet MS</option>
+                            <option value="georgia" {% if breaking_news_ticker_config.font_family == 'georgia' %}selected{% endif %}>Georgia</option>
+                            <option value="times" {% if breaking_news_ticker_config.font_family == 'times' %}selected{% endif %}>Times New Roman</option>
+                            <option value="courier" {% if breaking_news_ticker_config.font_family == 'courier' %}selected{% endif %}>Courier New</option>
+                        </select>
+                    </div>
+                    <div class="generated-field">
+                        <label for="id_breaking_news_font_size">Font Size (px)</label>
+                        <input
+                            id="id_breaking_news_font_size"
+                            type="number"
+                            name="font_size"
+                            min="12"
+                            max="48"
+                            step="1"
+                            value="{{ breaking_news_ticker_config.font_size|default:20 }}"
+                            required>
+                    </div>
+                    <div class="generated-field">
+                        <label for="id_breaking_news_text_color">Text Color</label>
+                        <input id="id_breaking_news_text_color" class="generated-color-input" type="color" name="text_color" value="{{ breaking_news_ticker_config.text_color|default:'#FFFFFF' }}">
+                    </div>
+                    <div class="generated-field">
+                        <label for="id_breaking_news_background_color">Background Color</label>
+                        <input id="id_breaking_news_background_color" class="generated-color-input" type="color" name="background_color" value="{{ breaking_news_ticker_config.background_color|default:'#B42318' }}">
+                    </div>
+                    <div class="generated-field">
+                        <label class="generated-checkbox" for="id_breaking_news_dateline_titles">
+                            <input id="id_breaking_news_dateline_titles" type="checkbox" name="include_dateline_titles" {% if breaking_news_ticker_config.include_dateline_titles %}checked{% endif %}>
+                            <span>Dateline titles</span>
+                        </label>
+                    </div>
+                    <div class="generated-field">
+                        <label class="generated-checkbox" for="id_breaking_news_weather_alerts">
+                            <input id="id_breaking_news_weather_alerts" type="checkbox" name="include_weather_alerts" {% if breaking_news_ticker_config.include_weather_alerts %}checked{% endif %}>
+                            <span>Weather alerts</span>
+                        </label>
+                    </div>
+                    <div class="generated-field">
+                        <label class="generated-checkbox" for="id_breaking_news_custom_text_enabled">
+                            <input id="id_breaking_news_custom_text_enabled" type="checkbox" name="include_custom_text" {% if breaking_news_ticker_config.include_custom_text %}checked{% endif %}>
+                            <span>Custom text</span>
+                        </label>
+                    </div>
+                    <div class="generated-field generated-field-wide">
+                        <label for="id_breaking_news_custom_text">Custom Text</label>
+                        <input
+                            id="id_breaking_news_custom_text"
+                            type="text"
+                            name="custom_text"
+                            maxlength="500"
+                            value="{{ breaking_news_ticker_config.custom_text|default:'' }}"
+                            placeholder="Type the persistent ticker text">
+                    </div>
+                    <button type="submit" class="generated-save-btn">Save Ticker</button>
+                </div>
+            </form>
+        </section>
+
+        {% if object_list %}
+            <table class="table">
+                <caption class="reorder-note">Drag rows to reorder slides. Generated slides keep their own settings above.</caption>
+                <thead>
+                    <tr>
+                        <th class="drag-cell">Move</th>
+                        <th>File Type</th>
+                        <th>Preview</th>
+                        <th>Title</th>
+                        <th>Playback</th>
+                        <th>Actions</th>
+                    </tr>
+                </thead>
+                <tbody id="slides-sortable-body" data-reorder-url="{% url 'reorder_slides' %}">
+                    {% for post in object_list %}
+                        <tr class="slide-row" data-post-id="{{ post.pk }}">
+                            <td class="drag-cell">
+                                <button type="button" class="drag-handle" draggable="true" aria-label="Drag to reorder {{ post.title }}">
+                                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+                                        <circle cx="9" cy="6" r="1"></circle>
+                                        <circle cx="15" cy="6" r="1"></circle>
+                                        <circle cx="9" cy="12" r="1"></circle>
+                                        <circle cx="15" cy="12" r="1"></circle>
+                                        <circle cx="9" cy="18" r="1"></circle>
+                                        <circle cx="15" cy="18" r="1"></circle>
+                                    </svg>
+                                </button>
+                            </td>
+                            <td>
+                                {% if post.content_type == 'image' %}
+                                    Image Slide
+                                {% elif post.content_type == 'video' %}
+                                    Video Slide
+                                {% elif post.content_type == 'youtube' %}
+                                    YouTube Slide
+                                {% elif post.content_type == 'gslides' %}
+                                    Google Slides
+                                {% elif post.content_type == 'html' %}
+                                    Custom HTML
+                                {% else %}
+                                    Rich Text
+                                {% endif %}
+                            </td>
+                            <td>
+                                {% if post.content_type == 'image' and post.cover %}
+                                    <img src="{% if post.slide_library_preview_url %}{{ post.slide_library_preview_url }}{% else %}{{ post.cover_media_url }}{% endif %}" alt="{{ post.title }}" width="250" loading="lazy" decoding="async">
+                                {% elif post.content_type == 'video' and post.cover %}
+                                    {% if post.preview_url %}
+                                        <img src="{{ post.preview_url }}" alt="{{ post.title }} preview" width="250" loading="lazy" decoding="async">
+                                    {% else %}
+                                        <video src="{{ post.cover_media_url }}" width="250" controls muted preload="metadata"></video>
+                                    {% endif %}
+                                {% elif post.content_type == 'youtube' and post.preview_url %}
+                                    <img src="{{ post.preview_url }}" alt="{{ post.title }} preview" width="250" loading="lazy" decoding="async">
+                                {% elif post.content_type == 'gslides' %}
+                                    <div class="custom-content-placeholder google-slides-placeholder" aria-label="Google Slides slide">
+                                        <span>Google Slides</span>
+                                    </div>
+                                {% elif post.content_type == 'html' %}
+                                    <div class="custom-content-placeholder html-placeholder" aria-label="Custom HTML slide">
+                                        <span>&lt; html /&gt;</span>
+                                    </div>
+                                {% else %}
+                                    <div class="custom-content-placeholder">
+                                        <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                            <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
+                                            <polyline points="14 2 14 8 20 8"></polyline>
+                                            <line x1="16" y1="13" x2="8" y2="13"></line>
+                                            <line x1="16" y1="17" x2="8" y2="17"></line>
+                                        </svg>
+                                    </div>
+                                {% endif %}
+                            </td>
+                            <td class="content-cell">
+                                <div class="title-edit-shell" data-title-shell>
+                                    <button type="button" class="content-title" data-title-trigger aria-label="Rename slide {{ post.title }}">
+                                        <span>{{ post.title }}</span>
+                                        <span class="content-title-icon" aria-hidden="true">
+                                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                                <path d="M12 20h9"></path>
+                                                <path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4Z"></path>
+                                            </svg>
+                                        </span>
+                                    </button>
+                                    <form action="{% url 'update_slide_title' post.pk %}" method="POST" class="title-edit-form">
+                                        {% csrf_token %}
+                                        <input class="title-input" type="text" name="title" value="{{ post.title }}" maxlength="200" aria-label="New title for {{ post.title }}">
+                                        <button type="submit" class="title-save-btn">Save</button>
+                                        <button type="button" class="title-cancel-btn" data-title-cancel>Cancel</button>
+                                    </form>
+                                </div>
+                                <div class="content-meta">
+                                    {% if post.content_type == 'custom' %}
+                                        <span class="content-badge">Rich Text</span>
+                                        <span class="content-badge">
+                                            <span class="color-chip" style="background: {{ post.text_color }};"></span>
+                                            Text
+                                        </span>
+                                        <span class="content-badge">
+                                            <span class="color-chip" style="background: {{ post.background_color }};"></span>
+                                            Background
+                                        </span>
+                                    {% elif post.content_type == 'html' %}
+                                        <span class="content-badge">Custom HTML</span>
+                                        <span class="content-badge">Rendered In Isolated Frame</span>
+                                    {% elif post.content_type == 'youtube' %}
+                                        <span class="content-badge">YouTube</span>
+                                        {% if post.youtube_start_seconds %}
+                                            <span class="content-badge">Start {{ post.youtube_start_seconds }}s</span>
+                                        {% endif %}
+                                        {% if post.youtube_end_seconds %}
+                                            <span class="content-badge">End {{ post.youtube_end_seconds }}s</span>
+                                        {% endif %}
+                                        <span class="content-badge">{{ post.get_youtube_quality_display }}</span>
+                                        {% if post.youtube_show_captions %}
+                                            <span class="content-badge">Captions On</span>
+                                        {% endif %}
+                                    {% elif post.content_type == 'gslides' %}
+                                        <span class="content-badge">Google Slides</span>
+                                        <span class="content-badge">{{ post.google_slides_range_label }}</span>
+                                        <span class="content-badge">{{ post.google_slides_advance_interval_seconds }}s per page</span>
+                                        <span class="content-badge">{{ post.google_slides_total_duration_seconds }}s total</span>
+                                    {% elif post.content_type == 'image' and post.has_image_edits %}
+                                        <span class="content-badge">Edited Renditions</span>
+                                    {% endif %}
+                                    {% if post.is_visible %}
+                                        <span class="content-badge">Shown In Display</span>
+                                    {% else %}
+                                        <span class="content-badge">Hidden From Display</span>
+                                    {% endif %}
+                                </div>
+                                {% if post.description and post.content_type == 'custom' %}
+                                    <div class="content-description">
+                                        {{ post.description|striptags|truncatechars:12 }}
+                                    </div>
+                                {% elif post.description and post.content_type != 'html' %}
+                                    <div class="content-description">
+                                        {{ post.description|safe }}
+                                    </div>
+                                {% endif %}
+                                {% if post.link %}
+                                    <a href="{{ post.link }}" target="_blank" class="content-link">
+                                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="vertical-align: middle; margin-right: 4px;">
+                                            <path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"></path>
+                                            <polyline points="15 3 21 3 21 9"></polyline>
+                                            <line x1="10" y1="14" x2="21" y2="3"></line>
+                                        </svg>
+                                        Visit Link
+                                    </a>
+                                {% elif post.content_type == 'youtube' and post.youtube_url %}
+                                    <a href="{{ post.youtube_url }}" target="_blank" class="content-link">
+                                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="vertical-align: middle; margin-right: 4px;">
+                                            <path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"></path>
+                                            <polyline points="15 3 21 3 21 9"></polyline>
+                                            <line x1="10" y1="14" x2="21" y2="3"></line>
+                                        </svg>
+                                        Open Video
+                                    </a>
+                                {% elif post.content_type == 'gslides' and post.google_slides_url %}
+                                    <a href="{{ post.google_slides_url }}" target="_blank" class="content-link">
+                                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="vertical-align: middle; margin-right: 4px;">
+                                            <path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"></path>
+                                            <polyline points="15 3 21 3 21 9"></polyline>
+                                            <line x1="10" y1="14" x2="21" y2="3"></line>
+                                        </svg>
+                                        Open Deck
+                                    </a>
+                                {% endif %}
+                            </td>
+                            <td>
+                                {% if post.content_type == 'gslides' %}
+                                    <div class="action-stack">
+                                        <span class="content-badge">{{ post.google_slides_total_duration_seconds }}s total</span>
+                                        <div class="action-note">Computed from {{ post.google_slides_range_label|lower }} at {{ post.google_slides_advance_interval_seconds }} seconds per page.</div>
+                                        <div class="action-note">Transitions are edited with the Google Slides settings.</div>
+                                    </div>
+                                {% else %}
+                                    <form action="{% url 'update_slide_duration' post.pk %}" method="POST" class="playback-form">
+                                        {% csrf_token %}
+                                        <input class="duration-input" type="number" name="duration_seconds" min="1" max="3600" step="1" value="{{ post.duration_seconds }}" aria-label="Duration in seconds for {{ post.title }}">
+                                        <select class="transition-select" name="transition_type" aria-label="Transition for {{ post.title }}">
+                                            {% for value, label in slide_transition_choices %}
+                                                <option value="{{ value }}" {% if value == post.transition_type %}selected{% endif %}>{{ label }}</option>
+                                            {% endfor %}
+                                        </select>
+                                        <button type="submit" class="save-duration-btn">Save</button>
+                                    </form>
+                                {% endif %}
+                            </td>
+                            <td>
+                                <div class="action-stack">
+                                    <a class="paused-preview-link" href="{% url 'paused_post_view' post.pk %}" target="_blank" rel="noopener" aria-label="Open {{ post.title }} in a paused view">Open paused view ↗</a>
+                                    <form action="{% url 'update_slide_visibility' post.pk %}" method="POST" class="visibility-form">
+                                        {% csrf_token %}
+                                        <input type="hidden" name="is_visible" value="{% if post.is_visible %}0{% else %}1{% endif %}">
+                                        <button type="submit" class="visibility-btn{% if post.is_visible %} is-active{% endif %}">
+                                            {% if post.is_visible %}Hide from Display{% else %}Show in Display{% endif %}
+                                        </button>
+                                    </form>
+                                    {% if post.is_editable_image %}
+                                        <a href="{% url 'edit_slide_image' post.pk %}" class="edit-btn">Edit Image</a>
+                                    {% elif post.content_type == 'gslides' %}
+                                        <a href="{% url 'edit_google_slides_slide' post.pk %}" class="edit-btn">Edit Google Slides</a>
+                                    {% elif post.content_type == 'html' %}
+                                        <a href="{% url 'edit_html_slide' post.pk %}" class="edit-btn">Edit HTML</a>
+                                    {% elif post.content_type == 'custom' %}
+                                        <a href="{% url 'edit_rich_text_slide' post.pk %}" class="edit-btn" aria-label="Edit Rich Text: {{ post.title }}">Edit Rich Text</a>
+                                    {% elif post.content_type == 'image' %}
+                                        <div class="action-note">Editing is available for static image slides only.</div>
+                                    {% endif %}
+                                    <form action="{% url 'delete_image' post.pk %}" method="POST">
+                                        {% csrf_token %}
+                                        <button type="submit" class="delete-btn" onclick="return confirm('Are you sure you want to delete this content?')">Delete</button>
+                                    </form>
+                                </div>
+                            </td>
+                        </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+            <div id="reorder-status" class="alert" style="display: none;" aria-live="polite"></div>
+        {% else %}
+            <div class="no-images">
+                <p>No content yet. Use the Add Slide button below to add the first slide.</p>
+            </div>
+        {% endif %}
+        
+        <div class="page-actions">
+            <a href="{% url 'add_slide' %}" class="upload-btn">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="vertical-align: middle; margin-right: 6px;">
+                    <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+                    <polyline points="17 8 12 3 7 8"></polyline>
+                    <line x1="12" y1="3" x2="12" y2="15"></line>
+                </svg>
+                Add Slide
+            </a>
+            <a href="{% url 'home' %}" class="home-link">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="vertical-align: middle; margin-right: 6px;">
+                    <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"></path>
+                    <polyline points="9 22 9 12 15 12 15 22"></polyline>
+                </svg>
+                Home
+            </a>
+        </div>
+    </div>
+    <script>
+        (function() {
+            const sortableBody = document.getElementById('slides-sortable-body');
+            const statusNode = document.getElementById('reorder-status');
+            if (!sortableBody || !statusNode) return;
+
+            let draggedRow = null;
+
+            function showStatus(message, isError) {
+                statusNode.textContent = message;
+                statusNode.className = isError ? 'alert alert-error' : 'alert alert-success';
+                statusNode.style.display = 'block';
+                window.clearTimeout(showStatus.timeoutId);
+                showStatus.timeoutId = window.setTimeout(() => {
+                    statusNode.style.display = 'none';
+                }, 2600);
+            }
+
+            function clearDropTargets() {
+                sortableBody.querySelectorAll('.slide-row.drop-target').forEach((row) => {
+                    row.classList.remove('drop-target');
+                });
+            }
+
+            async function persistOrder() {
+                const orderedIds = Array.from(sortableBody.querySelectorAll('.slide-row')).map((row) => Number(row.dataset.postId));
+                const response = await fetch(sortableBody.dataset.reorderUrl, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-CSRFToken': '{{ csrf_token }}',
+                    },
+                    body: JSON.stringify({ ordered_ids: orderedIds }),
+                });
+
+                if (!response.ok) {
+                    throw new Error('Unable to save the new slide order.');
+                }
+
+                showStatus('Slide order saved.', false);
+            }
+
+            sortableBody.querySelectorAll('.drag-handle').forEach((handle) => {
+                const row = handle.closest('.slide-row');
+                handle.addEventListener('dragstart', (event) => {
+                    draggedRow = row;
+                    row.classList.add('dragging');
+                    event.dataTransfer.effectAllowed = 'move';
+                    event.dataTransfer.setData('text/plain', row.dataset.postId);
+                });
+
+                handle.addEventListener('dragend', async () => {
+                    if (!draggedRow) return;
+                    draggedRow.classList.remove('dragging');
+                    clearDropTargets();
+                    try {
+                        await persistOrder();
+                    } catch (error) {
+                        showStatus(error.message, true);
+                    } finally {
+                        draggedRow = null;
+                    }
+                });
+            });
+
+            sortableBody.querySelectorAll('.slide-row').forEach((row) => {
+                row.addEventListener('dragover', (event) => {
+                    if (!draggedRow || draggedRow === row) return;
+                    event.preventDefault();
+                    clearDropTargets();
+                    row.classList.add('drop-target');
+                    const rect = row.getBoundingClientRect();
+                    const insertAfter = event.clientY > rect.top + rect.height / 2;
+                    sortableBody.insertBefore(draggedRow, insertAfter ? row.nextSibling : row);
+                });
+
+                row.addEventListener('drop', (event) => {
+                    event.preventDefault();
+                    clearDropTargets();
+                });
+            });
+
+            sortableBody.querySelectorAll('[data-title-trigger]').forEach((button) => {
+                button.addEventListener('click', () => {
+                    const shell = button.closest('[data-title-shell]');
+                    if (!shell) return;
+                    shell.classList.add('is-editing');
+                    const input = shell.querySelector('.title-input');
+                    if (input) {
+                        input.focus();
+                        input.select();
+                    }
+                });
+            });
+
+            sortableBody.querySelectorAll('[data-title-cancel]').forEach((button) => {
+                button.addEventListener('click', () => {
+                    const shell = button.closest('[data-title-shell]');
+                    if (!shell) return;
+                    shell.classList.remove('is-editing');
+                });
+            });
+        })();
+    </script>
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
+    <script src="https://unpkg.com/leaflet-providers@3.0.0/leaflet-providers.js?v=20260923"></script>
+    <script>
+        (() => {
+            const controls = [
+                ['id_transit_zoom_offset', 'transit_zoom_value', (value) => value],
+                ['id_transit_x_offset', 'transit_x_value', (value) => formatCompassOffset(value, 'x')],
+                ['id_transit_y_offset', 'transit_y_value', (value) => formatCompassOffset(value, 'y')],
+                ['id_transit_initial_zoom_offset', 'transit_initial_zoom_value', (value) => value],
+                ['id_transit_initial_x_offset', 'transit_initial_x_value', (value) => formatCompassOffset(value, 'x')],
+                ['id_transit_initial_y_offset', 'transit_initial_y_value', (value) => formatCompassOffset(value, 'y')],
+                ['id_transit_initial_delay_seconds', 'transit_initial_delay_value', (value) => `${value} sec`],
+                ['id_transit_animation_end_offset_seconds', 'transit_end_offset_value', (value) => `${value} sec`],
+                ['id_transit_route_opacity_percent', 'transit_route_opacity_value', (value) => `${value}%`],
+            ];
+            function formatCompassOffset(rawValue, axis) {
+                const value = Number(rawValue);
+                const meters = Math.abs(value);
+                if (!meters) return '0 m';
+                const direction = axis === 'x'
+                    ? (value > 0 ? 'E' : 'W')
+                    : (value > 0 ? 'N' : 'S');
+                return `${meters} m ${direction}`;
+            }
+            controls.forEach(([inputId, outputId, format]) => {
+                const input = document.getElementById(inputId);
+                const output = document.getElementById(outputId);
+                if (!input || !output) return;
+                const update = () => { output.value = format(input.value); };
+                input.addEventListener('input', update);
+                update();
+            });
+            const transitForm = document.getElementById('transit-dashboard-form');
+            if (transitForm) {
+                const animationToggle = transitForm.querySelector('#id_transit_animation_enabled');
+                const animationControls = transitForm.querySelectorAll('[data-animation-control]');
+                const syncAnimationControls = () => animationControls.forEach((group) => {
+                    group.querySelectorAll('input, select').forEach((control) => { control.disabled = !animationToggle.checked; });
+                });
+                animationToggle.addEventListener('change', syncAnimationControls);
+                syncAnimationControls();
+                transitForm.addEventListener('submit', () => {
+                    animationControls.forEach((group) => group.querySelectorAll('input, select').forEach((control) => { control.disabled = false; }));
+                });
+            }
+        })();
+    </script>
+    <script>
+        (() => {
+            const select = document.getElementById('id_transit_map_layer');
+            const registry = window.L?.TileLayer?.Provider?.providers;
+            if (!select || !registry || !window.L.tileLayer.provider) return;
+            const requiresAuth = new Set([
+                'CartoDB', 'Esri', 'HERE', 'Jawg', 'MapBox', 'MapTiler', 'MapTilesAPI',
+                'NLS', 'OpenWeatherMap', 'Stadia', 'Thunderforest', 'TomTom', 'AzureMaps', 'OpenFireMap'
+            ]);
+            const needsCredentials = (options) => Object.keys(options || {}).some((key) => /api.?key|access.?token|subscription.?key/i.test(key));
+            const prettyName = (name) => name.replace(/([a-z0-9])([A-Z])/g, '$1 $2').replace(/([A-Z])([A-Z][a-z])/g, '$1 $2');
+            const groups = new Map();
+            Object.entries(registry).forEach(([providerName, provider]) => {
+                if (requiresAuth.has(providerName) || /^http:/i.test(provider.url || '') || needsCredentials(provider.options)) return;
+                const variants = provider.variants ? Object.entries(provider.variants) : [['', null]];
+                variants.forEach(([variantName, variant]) => {
+                    if (needsCredentials(variant?.options)) return;
+                    const value = variantName ? `${providerName}.${variantName}` : providerName;
+                    if (!groups.has(providerName)) groups.set(providerName, []);
+                    groups.get(providerName).push({ value, label: `${prettyName(providerName)}${variantName ? ` · ${prettyName(variantName)}` : ''}` });
+                });
+            });
+            const selected = select.dataset.selected;
+            const elements = [];
+            groups.forEach((options, providerName) => {
+                const group = document.createElement('optgroup');
+                group.label = prettyName(providerName);
+                options.forEach(({value, label}) => {
+                    const option = document.createElement('option');
+                    option.value = value;
+                    option.textContent = label;
+                    group.append(option);
+                });
+                elements.push(group);
+            });
+            select.replaceChildren(...elements);
+            select.value = Array.from(select.options).some((option) => option.value === selected) ? selected : 'OpenStreetMap.Mapnik';
+        })();
+    </script>
+{% endblock %}

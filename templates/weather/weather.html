@@ -1,0 +1,61 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<title>Binghamton Weather Dashboard</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+
+<!-- Weather Icons -->
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/weather-icons/2.0.12/css/weather-icons.min.css">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/weather-icons/2.0.12/css/weather-icons-wind.min.css">
+<!-- Leaflet -->
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
+<link rel="stylesheet" href="{% static 'style.css' %}?v=nasa-gibs-contrast-frames">
+</head>
+<body>
+
+<div class="main-card">
+  <div id="alert-banner" class="alert-banner"></div>
+
+  <div id="radar-map">
+    <div class="side-tab" id="side-tab">
+      <div id="grp-temp" class="group"></div>
+      <div id="grp-moist" class="group"></div>
+      <div id="grp-wind" class="group"></div>
+      <div id="grp-clouds" class="group"></div>
+      <div id="grp-pressure" class="group"></div>
+    </div>
+    <div id="timestamp">Loading…</div>
+    <div id="timeline">
+      <div class="timeline-track" id="timeline-track"></div>
+    </div>
+  </div>
+
+  <!-- Bottom panel from upload #2: three columns -->
+  <div class="bottom-panel">
+    <div id="col-left" class="bottom-col conditions">Loading current conditions…</div>
+    <div id="col-center" class="bottom-col col-extra"></div>
+    <div id="col-right" class="bottom-col col-metrics"></div>
+  </div>
+
+  <!-- Forecast row from upload #1 with animated icons -->
+  <div class="forecast-row" id="forecast-row"><p>Loading 3-day forecast…</p></div>
+  <footer>
+    <small>Data © NOAA / NWS · Overlay <span id="weather-overlay-attribution">loading...</span> · <span id="map-attribution">Map loading...</span></small>
+  </footer>
+</div>
+{% include "includes/breaking_news_ticker.html" %}
+
+<script>
+  window.WEATHER_OVERLAY_SOURCE = "{{ weather_config.overlay_source|default:'rainviewer'|escapejs }}";
+  window.WEATHER_MAP_LAYER = "{{ weather_config.map_layer|default:'osm_hot'|escapejs }}";
+  window.WEATHER_SLIDE_DURATION = {{ weather_config.duration_seconds|default:24 }} * 1000;
+  window.SLIDE_PAUSED = {{ paused_mode|yesno:"true,false" }};
+  window.WEATHER_NEXT_URL = "{% if calendar_slide_available %}{% url 'calendar_view' %}{% elif transit_dashboard_available %}{% url 'transit_view' %}{% else %}{% url 'slidedisplay' %}{% endif %}";
+</script>
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<script src="{% static 'app.js' %}?v=paused-slide-mode"></script>
+</body>
+</html>

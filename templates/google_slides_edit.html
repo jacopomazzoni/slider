@@ -1,0 +1,243 @@
+{% extends "base.html" %}
+
+{% block title %}Edit Google Slides{% endblock %}
+
+{% block content %}
+<style>
+  .google-slides-editor-shell {
+    max-width: 980px;
+    margin: 40px auto;
+    padding: 0 20px 48px;
+  }
+
+  .google-slides-editor-panel {
+    background: white;
+    border: 1px solid #dee2e6;
+    border-radius: 8px;
+    box-shadow: 0 2px 10px rgba(15, 23, 42, 0.08);
+    padding: 28px;
+  }
+
+  .google-slides-editor-form {
+    display: grid;
+    gap: 18px;
+  }
+
+  .google-slides-editor-field label {
+    display: block;
+    margin-bottom: 8px;
+    color: var(--brand);
+    font-size: 14px;
+    font-weight: 700;
+  }
+
+  .google-slides-editor-field input,
+  .google-slides-editor-field select {
+    width: 100%;
+    padding: 12px 14px;
+    border: 1px solid #d0d5dd;
+    border-radius: 6px;
+    background: white;
+    font: inherit;
+  }
+
+  .google-slides-editor-row {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 16px;
+  }
+
+  .google-slides-editor-actions {
+    display: flex;
+    gap: 12px;
+    flex-wrap: wrap;
+  }
+
+  .primary-action,
+  .secondary-action {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 44px;
+    padding: 10px 18px;
+    border-radius: 6px;
+    font-weight: 700;
+    font-size: 14px;
+    text-decoration: none;
+    cursor: pointer;
+  }
+
+  .primary-action {
+    border: 0;
+    background: var(--brand);
+    color: white;
+  }
+
+  .secondary-action {
+    border: 1px solid #d0d5dd;
+    background: white;
+    color: var(--brand);
+  }
+
+  .field-help {
+    margin-top: 8px;
+    color: #667085;
+    font-size: 13px;
+    line-height: 1.5;
+  }
+
+  .field-error-list {
+    margin: 8px 0 0;
+    padding-left: 18px;
+    color: #b42318;
+    font-size: 13px;
+    line-height: 1.45;
+  }
+
+  .messages {
+    margin-bottom: 20px;
+  }
+
+  .alert {
+    padding: 12px 20px;
+    border-radius: 6px;
+    margin-bottom: 12px;
+  }
+
+  .alert-success {
+    background: #d4edda;
+    color: #155724;
+    border: 1px solid #c3e6cb;
+  }
+
+  .alert-error {
+    background: #f8d7da;
+    color: #721c24;
+    border: 1px solid #f5c6cb;
+  }
+
+  .duration-preview {
+    padding: 14px 16px;
+    border: 1px solid #d0d5dd;
+    border-radius: 6px;
+    background: #f8fafc;
+    color: #344054;
+    font-size: 14px;
+    font-weight: 600;
+  }
+
+  @media (max-width: 760px) {
+    .google-slides-editor-row {
+      grid-template-columns: 1fr;
+    }
+  }
+</style>
+
+<div class="google-slides-editor-shell">
+  {% if messages %}
+    <div class="messages">
+      {% for message in messages %}
+        <div class="alert alert-{{ message.tags }}">{{ message }}</div>
+      {% endfor %}
+    </div>
+  {% endif %}
+
+  <div class="page-header">
+    <h1 class="page-title">Edit Google Slides</h1>
+    <p class="page-subtitle">{{ post.title }}. This slide reopens the published deck each time it is shown and advances through the selected range once.</p>
+  </div>
+
+  <section class="google-slides-editor-panel">
+    <form method="post" class="google-slides-editor-form">
+      {% csrf_token %}
+
+      <div class="google-slides-editor-field">
+        <label for="{{ form.title.id_for_label }}">Title</label>
+        {{ form.title }}
+        {% if form.title.errors %}
+          <ul class="field-error-list">{{ form.title.errors }}</ul>
+        {% endif %}
+      </div>
+
+      <div class="google-slides-editor-field">
+        <label for="{{ form.google_slides_url.id_for_label }}">Google Slides URL</label>
+        {{ form.google_slides_url }}
+        <div class="field-help">Published embed links from Google Slides are the best fit here. The slide is reopened each time it enters the display.</div>
+        {% if form.google_slides_url.errors %}
+          <ul class="field-error-list">{{ form.google_slides_url.errors }}</ul>
+        {% endif %}
+      </div>
+
+      <div class="google-slides-editor-row">
+        <div class="google-slides-editor-field">
+          <label for="{{ form.google_slides_start_slide.id_for_label }}">Start Slide</label>
+          {{ form.google_slides_start_slide }}
+          {% if form.google_slides_start_slide.errors %}
+            <ul class="field-error-list">{{ form.google_slides_start_slide.errors }}</ul>
+          {% endif %}
+        </div>
+
+        <div class="google-slides-editor-field">
+          <label for="{{ form.google_slides_end_slide.id_for_label }}">End Slide</label>
+          {{ form.google_slides_end_slide }}
+          {% if form.google_slides_end_slide.errors %}
+            <ul class="field-error-list">{{ form.google_slides_end_slide.errors }}</ul>
+          {% endif %}
+        </div>
+      </div>
+
+      <div class="google-slides-editor-row">
+        <div class="google-slides-editor-field">
+          <label for="{{ form.google_slides_advance_seconds.id_for_label }}">Seconds Per Page</label>
+          {{ form.google_slides_advance_seconds }}
+          {% if form.google_slides_advance_seconds.errors %}
+            <ul class="field-error-list">{{ form.google_slides_advance_seconds.errors }}</ul>
+          {% endif %}
+        </div>
+
+        <div class="google-slides-editor-field">
+          <label for="{{ form.transition_type.id_for_label }}">Transition</label>
+          {{ form.transition_type }}
+          {% if form.transition_type.errors %}
+            <ul class="field-error-list">{{ form.transition_type.errors }}</ul>
+          {% endif %}
+        </div>
+      </div>
+
+      <div class="duration-preview" id="google-slides-duration-preview">
+        This slide currently runs for {{ post.google_slides_total_duration_seconds }} seconds.
+      </div>
+
+      <div class="google-slides-editor-actions">
+        <button type="submit" class="primary-action">Save Google Slides</button>
+        <a href="{% url 'manage_slides' %}" class="secondary-action">Back to Slide Library</a>
+      </div>
+    </form>
+  </section>
+</div>
+
+<script>
+  (function() {
+    const startInput = document.getElementById('{{ form.google_slides_start_slide.id_for_label }}');
+    const endInput = document.getElementById('{{ form.google_slides_end_slide.id_for_label }}');
+    const secondsInput = document.getElementById('{{ form.google_slides_advance_seconds.id_for_label }}');
+    const preview = document.getElementById('google-slides-duration-preview');
+
+    function refreshPreview() {
+      if (!preview) return;
+      const start = Math.max(1, Number(startInput?.value || 1));
+      const end = Math.max(start, Number(endInput?.value || start));
+      const secondsPerPage = Math.max(1, Number(secondsInput?.value || 8));
+      const pageCount = (end - start) + 1;
+      const totalSeconds = pageCount * secondsPerPage;
+      const rangeLabel = start === end ? `slide ${start}` : `slides ${start}-${end}`;
+      preview.textContent = `This slide will show ${rangeLabel} at ${secondsPerPage} second${secondsPerPage === 1 ? '' : 's'} per page for a total of ${totalSeconds} second${totalSeconds === 1 ? '' : 's'}.`;
+    }
+
+    [startInput, endInput, secondsInput].forEach((input) => {
+      if (input) input.addEventListener('input', refreshPreview);
+    });
+    refreshPreview();
+  })();
+</script>
+{% endblock %}
