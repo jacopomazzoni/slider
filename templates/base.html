@@ -135,6 +135,17 @@
       width: 100%;
     }
 
+    .nav-action {
+      margin: 0;
+    }
+
+    .nav-action button.nav-link {
+      border: 0;
+      background: transparent;
+      font-family: inherit;
+      cursor: pointer;
+    }
+
     .nav-link {
       display: inline-flex;
       align-items: center;
@@ -226,7 +237,8 @@
       display: block;
     }
 
-    .menu a {
+    .menu a,
+    .menu .nav-action button.nav-link {
       color: var(--text);
       background: transparent;
       padding: 14px 20px;
@@ -237,13 +249,17 @@
       font-size: 16px;
       transition: all 0.2s;
       border-bottom: 1px solid #f0f0f0;
+      width: 100%;
+      text-align: left;
     }
 
-    .menu a:last-child {
+    .menu > a:last-child,
+    .menu .nav-action:last-child button.nav-link {
       border-bottom: none;
     }
 
-    .menu a:hover {
+    .menu a:hover,
+    .menu .nav-action button.nav-link:hover {
       background-color: var(--brand-soft);
       color: var(--brand);
     }

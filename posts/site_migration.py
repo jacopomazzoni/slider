@@ -20,6 +20,7 @@ from .models import (
     GeneratedSlideConfig,
     Post,
     ScreenPowerSchedule,
+    SlideLibraryConfig,
     TransitDashboardConfig,
     TransitRoute,
     SiteAppearanceSettings,
@@ -94,6 +95,7 @@ def build_site_manifest(*, exported_by="system"):
         "empty_display_config": serialize_instance_or_none(EmptyDisplayConfig.objects.first()),
         "breaking_news_ticker_config": serialize_instance_or_none(BreakingNewsTickerConfig.objects.first()),
         "screen_power_schedule": serialize_instance_or_none(ScreenPowerSchedule.objects.first()),
+        "slide_library_config": serialize_instance_or_none(SlideLibraryConfig.objects.first()),
         "site_appearance": serialize_instance_or_none(SiteAppearanceSettings.objects.first()),
         "project_files": {
             "dateline_announcements": {
@@ -371,6 +373,8 @@ def replace_database_records(manifest):
     restore_singleton(EmptyDisplayConfig, manifest.get("empty_display_config"))
     restore_singleton(BreakingNewsTickerConfig, manifest.get("breaking_news_ticker_config"))
     restore_singleton(ScreenPowerSchedule, manifest.get("screen_power_schedule"))
+    SlideLibraryConfig.objects.all().delete()
+    restore_singleton(SlideLibraryConfig, manifest.get("slide_library_config"))
     ScreenPowerSchedule.objects.update(last_scheduler_check=None, last_attempt_at=None,
         last_applied_slot='', last_error='', last_screen_on_run=None, last_screen_off_run=None)
     restore_singleton(SiteAppearanceSettings, manifest.get("site_appearance"))

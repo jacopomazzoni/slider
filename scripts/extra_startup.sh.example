@@ -1,0 +1,6 @@
+#!/usr/bin/env bash
+set -Eeuo pipefail
+
+# Copy to extra_startup.sh for this site's optional startup hook.
+# Authorize sudo in the terminal before starting: sudo -v
+exec sudo tailscale funnel 8000

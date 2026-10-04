@@ -4,6 +4,10 @@ from django.urls import reverse
 
 
 class SignUpViewTests(TestCase):
+    def setUp(self):
+        self.admin = get_user_model().objects.create_superuser('signup-admin', password='test')
+        self.client.force_login(self.admin)
+
     def test_signup_page_shows_password_toggle_without_validator_help_text(self):
         response = self.client.get(reverse('signup'))
         self.assertEqual(response.status_code, 200)
@@ -20,7 +24,7 @@ class SignUpViewTests(TestCase):
                 'password2': 'abc123',
             },
         )
-        self.assertEqual(response.status_code, 302)
+        self.assertRedirects(response, reverse('settings'), fetch_redirect_response=False)
         created_user = get_user_model().objects.get(username='newuser')
         self.assertEqual(created_user.email, 'newuser@example.com')
         self.assertTrue(created_user.check_password('abc123'))

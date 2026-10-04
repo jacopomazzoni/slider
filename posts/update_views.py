@@ -2,13 +2,14 @@ import requests
 import subprocess
 from django.http import JsonResponse
 from django.views.decorators.http import require_GET, require_POST
+from accounts.permissions import is_site_admin
 from .activity import activity_success
 from .updates import UpdateError, check_update, launch_update, status_read
 
 
 @require_GET
 def update_check(request):
-    if not request.user.is_active or not request.user.is_superuser:
+    if not is_site_admin(request.user):
         return JsonResponse({'error': 'Superuser access required.'}, status=403)
     try:
         result = check_update()
@@ -22,7 +23,7 @@ def update_check(request):
 
 @require_POST
 def update_install(request):
-    if not request.user.is_active or not request.user.is_superuser:
+    if not is_site_admin(request.user):
         return JsonResponse({'error': 'Superuser access required.'}, status=403)
     try:
         launch_update(request.POST.get('sha', ''))

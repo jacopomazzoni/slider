@@ -43,6 +43,7 @@ def private_path(name):
     return (any(p in {'data', 'media', 'logs', 'emails', 'backups', 'updates', '__pycache__'}
                 or p.startswith('.venv') for p in parts)
             or name == 'templates/dateline_announcements.json'
+            or name == 'scripts/extra_startup.sh'
             or any(p == '.secret_key' or (p.startswith('.env') and p != '.env.example') for p in parts)
             or bool(re.search(r'\.(sqlite3.*|db|pyc|zip|pem|key)$', name)))
 

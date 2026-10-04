@@ -58,6 +58,17 @@
     border-color: var(--brand);
   }
 
+  .home-action {
+    margin: 0;
+    display: flex;
+  }
+
+  .home-action .card-link {
+    width: 100%;
+    font-family: inherit;
+    cursor: pointer;
+  }
+
   .card-title {
     color: var(--brand);
     font-weight: 600;
@@ -149,6 +160,18 @@
   <section class="home-grid" aria-label="Main actions">
     {% for item in app_nav_items %}
       {% if item.key != "home" %}
+        {% if item.key == 'logout' %}
+        <form method="post" action="{{ item.url }}" class="home-action">
+          {% csrf_token %}
+          <button type="submit" class="card-link">
+            <span class="card-icon" aria-hidden="true">
+              {% include "includes/nav_icon.html" with icon=item.icon %}
+            </span>
+            <span class="card-title">{{ item.label }}</span>
+            <span class="card-description">{{ item.description }}</span>
+          </button>
+        </form>
+        {% else %}
         <a href="{{ item.url }}" class="card-link">
           <span class="card-icon" aria-hidden="true">
             {% include "includes/nav_icon.html" with icon=item.icon %}
@@ -156,6 +179,7 @@
           <h3 class="card-title">{{ item.label }}</h3>
           <p class="card-description">{{ item.description }}</p>
         </a>
+        {% endif %}
       {% endif %}
     {% endfor %}
   </section>

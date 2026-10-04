@@ -55,6 +55,8 @@ let animationFrameId = null;
 let refreshIntervalId = null;
 let slideTimeoutId = null;
 let resizeReloadTimerId = null;
+let sidebarFitFrameId = null;
+let mapResizeObserver = null;
 let animationGeneration = 0;
 let isDisposed = false;
 
@@ -63,22 +65,32 @@ function byId(id) {
 }
 
 function safeNumber(value) {
-  if (value === null || value === undefined || value === "") return null;
+  if ((typeof value !== 'number' && typeof value !== 'string') || String(value).trim() === '') return null;
   const numberValue = Number(value);
   return Number.isFinite(numberValue) ? numberValue : null;
 }
 
-function formatNumber(value, digits = 1, fallback = "N/A") {
+function formatNumber(value, digits = 1, fallback = null) {
   const numberValue = safeNumber(value);
   return numberValue === null ? fallback : numberValue.toFixed(digits);
 }
 
 function formatValue(value, unit = "", digits = 1) {
   const formatted = typeof value === "number" ? formatNumber(value, digits) : value;
-  if (formatted === null || formatted === undefined || formatted === "" || formatted === "NaN") {
-    return "N/A";
+  if (formatted === null || formatted === undefined || /^(?:\s*|n\/?a|nan|null|undefined|unknown|unavailable|infinity)$/i.test(String(formatted).trim())) {
+    return null;
   }
   return `${formatted}${unit ? ` ${unit}` : ""}`;
+}
+
+function weatherEscape(value) {
+  return String(value).replace(/[&<>"']/g, (char) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[char]);
+}
+
+function weatherMetric(icon, value, unit = '', digits = 1, label = '') {
+  const formatted = formatValue(value, unit, digits);
+  if (formatted === null) return '';
+  return `<span><i class="wi ${icon}"></i>${weatherEscape(label)}${weatherEscape(formatted)}</span>`;
 }
 
 function firstVal(gridProperty) {
@@ -464,10 +476,9 @@ function renderMain(forecastData, alertData) {
   const ang = dirs[current.windDirection] || 0;
   const right = byId("col-right");
   if (right) {
-    right.innerHTML = `
-      <span><i class="wi wi-thermometer"></i><b>${formatNumber(current.temperature, 1)}°${current.temperatureUnit || ""}</b></span>
-      <span><i class="wi wi-wind from-${ang}-deg"></i>${current.windSpeed || "N/A"}</span>
-      <span><i class="wi wi-raindrops"></i>${formatNumber(current.probabilityOfPrecipitation?.value ?? 0, 0)}%</span>`;
+    right.innerHTML = weatherMetric('wi-thermometer', safeNumber(current.temperature), `°${current.temperatureUnit || ''}`)
+      + weatherMetric(`wi-wind from-${ang}-deg`, current.windSpeed)
+      + weatherMetric('wi-raindrops', safeNumber(current.probabilityOfPrecipitation?.value), '%', 0);
   }
 
   if (window.__extraData) renderExtraMetrics(window.__extraData);
@@ -479,7 +490,7 @@ function renderMain(forecastData, alertData) {
     const event = alert.event || "Weather alert";
     const headline = alert.headline || "";
     banner.style.display = "block";
-    banner.innerHTML = `<i class="wi ${alertIcon(event)}"></i> ${event.toUpperCase()}: ${headline}`;
+    banner.innerHTML = `<i class="wi ${alertIcon(event)}"></i> ${weatherEscape(event.toUpperCase())}: ${weatherEscape(headline)}`;
   } else {
     banner.style.display = "none";
   }
@@ -504,14 +515,15 @@ function renderForecast(forecastData) {
   const periods = forecastData.properties?.periods || [];
   periods.slice(1, 4).forEach((period) => {
     const { icon, anim } = mapForecastToIcon(period.shortForecast, period.isDaytime);
+    const temperature = safeNumber(period.temperature);
     const card = document.createElement("div");
     card.className = "forecast-card";
     card.innerHTML = `
-      <h3>${period.name || "Forecast"}</h3>
+      <h3>${weatherEscape(period.name || "Forecast")}</h3>
       <i class="wi ${icon} ${anim}"></i>
-      <div><b>${formatNumber(period.temperature, 1)}°${period.temperatureUnit || ""}</b></div>
-      <div>${period.shortForecast || "Forecast unavailable"}</div>
-      <div><i class="wi wi-raindrops"></i> ${formatNumber(period.probabilityOfPrecipitation?.value ?? 0, 0)}%</div>`;
+      ${temperature === null ? '' : `<div><b>${formatNumber(temperature)}°${weatherEscape(period.temperatureUnit || '')}</b></div>`}
+      <div>${weatherEscape(period.shortForecast || "Forecast unavailable")}</div>
+      <div>${weatherMetric('wi-raindrops', safeNumber(period.probabilityOfPrecipitation?.value), '%', 0)}</div>`;
     row.appendChild(card);
   });
 }
@@ -519,11 +531,10 @@ function renderForecast(forecastData) {
 function renderExtraMetrics(extraData) {
   const center = byId("col-center");
   if (!center) return;
-  center.innerHTML = `
-    <span><i class="wi wi-humidity"></i>Humidity: ${extraData.RH}%</span>
-    <span><i class="wi wi-barometer"></i>Pressure: ${extraData.Pressure} hPa</span>
-    <span><i class="wi wi-cloudy"></i>Sky: ${extraData.Sky}%</span>
-    <span><i class="wi wi-strong-wind"></i>Wind Gust: ${extraData.Wgust} km/h</span>`;
+  center.innerHTML = weatherMetric('wi-humidity', extraData.RH, '%', 0, 'Humidity: ')
+    + weatherMetric('wi-barometer', extraData.Pressure, 'hPa', 1, 'Pressure: ')
+    + weatherMetric('wi-cloudy', extraData.Sky, '%', 0, 'Sky: ')
+    + weatherMetric('wi-strong-wind', extraData.Wgust, 'km/h', 1, 'Wind Gust: ');
 }
 
 async function fetchGridpoints() {
@@ -538,7 +549,7 @@ async function fetchGridpoints() {
     const pressureValue = safeNumber(firstVal(properties.pressure));
     const extraData = {
       RH: formatNumber(firstVal(properties.relativeHumidity), 0),
-      Pressure: pressureValue === null ? "N/A" : formatNumber(pressureValue / 100, 1),
+      Pressure: pressureValue === null ? null : formatNumber(pressureValue / 100, 1),
       Sky: formatNumber(firstVal(properties.skyCover), 0),
       Wgust: formatNumber(firstVal(properties.windGust), 1)
     };
@@ -548,18 +559,20 @@ async function fetchGridpoints() {
     requestAnimationFrame(() => requestAnimationFrame(() => fitSidebarToMap()));
   } catch (error) {
     console.error("Unable to load gridpoint data:", error);
-    renderExtraMetrics({ RH: "N/A", Pressure: "N/A", Sky: "N/A", Wgust: "N/A" });
+    window.__extraData = {};
+    renderExtraMetrics({});
+    populateSideTab({});
   }
 }
 
 function addRow(container, icon, label, value, unit = "", digits = 1) {
   if (!container) return;
   const displayValue = formatValue(value, unit, digits);
-  if (displayValue === "N/A") return;
+  if (displayValue === null) return;
 
   const row = document.createElement("div");
   row.className = "row";
-  row.innerHTML = `<i class="wi ${icon}"></i><span>${label}: <b>${displayValue}</b></span>`;
+  row.innerHTML = `<i class="wi ${icon}"></i><span>${weatherEscape(label)}: <b>${weatherEscape(displayValue)}</b></span>`;
   container.appendChild(row);
 }
 
@@ -601,7 +614,7 @@ function populateSideTab(properties) {
   addRow(gW, "wi-wind-beaufort-6", "Transport Wind Speed", firstVal(properties.transportWindSpeed), "km/h");
   addWindRow(gW, "Transport Wind Direction", firstVal(properties.transportWindDirection));
 
-  const weatherCode = properties.weather?.values?.[0]?.value?.[0]?.weather || "N/A";
+  const weatherCode = properties.weather?.values?.[0]?.value?.[0]?.weather;
   addRow(gC, "wi-cloudy", "Sky Cover", firstVal(properties.skyCover), "%", 0);
   addRow(gC, "wi-na", "Weather Code", weatherCode, "", 0);
   addRow(gC, "wi-cloud", "Mixing Height", firstVal(properties.mixingHeight), "m");
@@ -630,8 +643,20 @@ function fitSidebarToMap() {
   }
 }
 
+function scheduleSidebarFit() {
+  if (isDisposed || sidebarFitFrameId !== null) return;
+  sidebarFitFrameId = requestAnimationFrame(() => {
+    sidebarFitFrameId = null;
+    if (isDisposed) return;
+    fitSidebarToMap();
+    if (map) map.invalidateSize({ animate: false, pan: false });
+  });
+}
+
 function disposeWeatherDashboard() {
   isDisposed = true;
+  if (sidebarFitFrameId !== null) cancelAnimationFrame(sidebarFitFrameId);
+  if (mapResizeObserver) mapResizeObserver.disconnect();
   cancelWeatherAnimation();
   if (refreshIntervalId !== null) clearInterval(refreshIntervalId);
   if (slideTimeoutId !== null) clearTimeout(slideTimeoutId);
@@ -644,7 +669,7 @@ function disposeWeatherDashboard() {
 }
 
 window.addEventListener("resize", () => {
-  requestAnimationFrame(fitSidebarToMap);
+  scheduleSidebarFit();
   if (WEATHER_OVERLAY_SOURCE === "nasa_gibs" && !isDisposed) {
     if (resizeReloadTimerId !== null) clearTimeout(resizeReloadTimerId);
     resizeReloadTimerId = window.setTimeout(loadWeatherFrames, 500);
@@ -653,6 +678,10 @@ window.addEventListener("resize", () => {
 window.addEventListener("pagehide", disposeWeatherDashboard);
 
 initMap();
+if (typeof ResizeObserver !== 'undefined') {
+  mapResizeObserver = new ResizeObserver(scheduleSidebarFit);
+  mapResizeObserver.observe(byId('radar-map'));
+}
 loadWeatherFrames();
 refreshIntervalId = window.setInterval(loadWeatherFrames, RADAR_REFRESH_INTERVAL);
 fetchGridpoints();

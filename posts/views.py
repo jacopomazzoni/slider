@@ -17,6 +17,8 @@ from .models import (
     GeneratedSlideConfig,
     Post,
     ScreenPowerSchedule,
+    SlideLibraryConfig,
+    default_library_sections,
     TransitDashboardConfig,
     TransitRoute,
     WeatherSlideConfig,
@@ -52,6 +54,7 @@ from .site_migration import (
     import_site_archive,
 )
 from django.contrib.auth.decorators import user_passes_test
+from accounts.permissions import is_site_admin
 from django.contrib.auth.models import User
 import json
 import hashlib
@@ -188,7 +191,25 @@ def slide_source_context():
     transit_config = get_transit_config()
     breaking_news_ticker_config = get_breaking_news_ticker_config()
     empty_display_config = get_empty_display_config()
+    section_order = SlideLibraryConfig.load().ordered_sections
+    available = {
+        'media': Post.objects.filter(is_visible=True).exists(),
+        'dateline': dateline_config.is_visible,
+        'weather': weather_config.is_visible,
+        'calendar': calendar_config.is_visible and bool(calendar_config.public_url),
+        'transit': transit_config.is_visible,
+    }
+    routes = {'media': 'slidedisplay', 'dateline': 'dateline', 'weather': 'weather_view',
+              'calendar': 'calendar_view', 'transit': 'transit_view'}
+    sequence = [{'key': key, 'url': reverse(routes[key]) + ('?section=media' if key == 'media' else '')}
+                for key in section_order if available.get(key)]
+    next_urls = {}
+    for index, section in enumerate(sequence):
+        next_urls[section['key']] = sequence[(index + 1) % len(sequence)]['url']
     return {
+        'library_section_order': section_order,
+        'display_sections': sequence,
+        'section_next_urls': next_urls,
         'dateline_config': dateline_config,
         'weather_config': weather_config,
         'calendar_config': calendar_config,
@@ -231,13 +252,8 @@ def resolve_empty_display_mode(*, config=None, dateline_config=None, weather_con
     if config.mode in availability and availability[config.mode]:
         return config.mode
 
-    for candidate in (
-        EmptyDisplayConfig.DATELINE,
-        EmptyDisplayConfig.WEATHER,
-        EmptyDisplayConfig.CALENDAR,
-        EmptyDisplayConfig.TRANSIT,
-    ):
-        if availability[candidate]:
+    for candidate in SlideLibraryConfig.load().ordered_sections:
+        if availability.get(candidate):
             return candidate
 
     return EmptyDisplayConfig.MESSAGE
@@ -315,6 +331,25 @@ def all_images_view(request):
     }
     context.update(slide_source_context())
     return render(request, "uploaded_images.html", context)
+
+
+@login_required
+@require_POST
+def reorder_sections(request):
+    try:
+        payload = json.loads(request.body)
+        order = payload.get('section_order') if isinstance(payload, dict) else None
+        allowed = default_library_sections()
+        if (not isinstance(order, list) or len(order) != len(allowed)
+                or any(not isinstance(key, str) for key in order) or set(order) != set(allowed)):
+            raise ValueError('Choose each library section exactly once.')
+    except (ValueError, UnicodeDecodeError):
+        return JsonResponse({'error': 'Invalid section order.'}, status=400)
+    config = SlideLibraryConfig.load()
+    config.section_order = order
+    config.save(update_fields=['section_order'])
+    activity_success(request, 'Slide Library and display section order updated.')
+    return JsonResponse({'section_order': order})
 
 
 @login_required
@@ -828,6 +863,9 @@ def slidedisplay(request):
         'paused_mode': False,
     }
     context.update(slide_source_context())
+    sequence = context['display_sections']
+    if posts and sequence and request.GET.get('section') != 'media' and sequence[0]['key'] != 'media':
+        return redirect(sequence[0]['url'])
     fallback_response = apply_empty_display_fallback(posts, context)
     if fallback_response is not None:
         return fallback_response
@@ -918,19 +956,19 @@ def fetch_json_view(request):
 
 
 # SETTINGS PAGE
-@user_passes_test(lambda user: user.is_superuser, login_url='home')
+@user_passes_test(is_site_admin, login_url='home')
 def settings_view(request):
     return render(request, 'manage_users.html', settings_page_context(request=request))
 
 
-@user_passes_test(lambda user: user.is_superuser, login_url='home')
+@user_passes_test(is_site_admin, login_url='home')
 def export_site_migration_view(request):
     archive = export_site_archive(exported_by=request.user.username)
     filename = f"slidercms-site-export-{timezone.now().strftime('%Y%m%d-%H%M%S')}.zip"
     return FileResponse(archive, as_attachment=True, filename=filename)
 
 
-@user_passes_test(lambda user: user.is_superuser, login_url='home')
+@user_passes_test(is_site_admin, login_url='home')
 @require_POST
 def import_site_migration_view(request):
     form = SiteMigrationImportForm(request.POST, request.FILES)
@@ -990,7 +1028,7 @@ def import_site_migration_view(request):
     return redirect('settings')
 
 
-@user_passes_test(lambda user: user.is_superuser, login_url='home')
+@user_passes_test(is_site_admin, login_url='home')
 @require_POST
 def update_site_appearance(request):
     config = get_site_appearance()
@@ -1014,7 +1052,7 @@ def update_site_appearance(request):
     return redirect('settings')
 
 
-@user_passes_test(lambda user: user.is_superuser, login_url='home')
+@user_passes_test(is_site_admin, login_url='home')
 @require_POST
 def update_screen_power_schedule(request):
     config = get_screen_power_schedule()
@@ -1043,7 +1081,7 @@ def update_screen_power_schedule(request):
     return redirect('settings')
 
 
-@user_passes_test(lambda user: user.is_superuser, login_url='home')
+@user_passes_test(is_site_admin, login_url='home')
 @require_POST
 def reset_user_password(request):
     users = User.objects.all().order_by('username')
@@ -1097,7 +1135,7 @@ def reorder_slides(request):
     return JsonResponse({'ok': True})
 
 
-@user_passes_test(lambda user: user.is_superuser, login_url='home')
+@user_passes_test(is_site_admin, login_url='home')
 @require_POST
 def toggle_superuser(request, pk):
     user = get_object_or_404(User, id=pk)

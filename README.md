@@ -23,6 +23,27 @@ It includes:
 - `scripts/stop_slidercms.sh` – stops the local kiosk/runtime processes
 - `scripts/build_and_run.sh` – lightweight local background launcher used in this workspace
 
+## Access Control
+
+- Only active, signed-in superusers can create accounts at `/accounts/signup/`,
+  manage Settings, reset other users' passwords, change roles, import/export a
+  site, or install software updates. Create User is available inside Settings.
+- Standard users are trusted slide editors. Editing, uploading, deleting,
+  reordering, and configuring slide sources require login and CSRF-protected
+  submissions. Logout also requires a CSRF-protected POST.
+- Slideshow, paused previews, dashboard feeds, mobile transit, and media URLs
+  are intentionally public for kiosk playback. Hiding a slide removes it from
+  playback; it does not make its media or preview confidential.
+- Custom HTML runs in an origin-isolated iframe. Scripts may render the slide,
+  but cannot access the parent page, its cookies, or CSRF tokens. HTML that uses
+  same-origin storage or authenticated CMS requests needs to be adapted.
+- Django's `/admin/` retains its staff and model-permission checks. Public
+  password recovery uses Django's expiring reset tokens, not the admin password
+  reset endpoint.
+
+Run the endpoint permission regression checks with:
+`.venv/bin/python manage.py test accounts posts.test_authorization`.
+
 ## Mobile Transit
 
 The transit display and paused preview include a QR link to `/transit/mobile/`.
@@ -298,6 +319,38 @@ The project reads runtime settings from `.env` where present. Notable variables 
 - `DEPLOY_REMOTE_ROOT`
 
 ## Notes
+
+### Optional site startup hook
+
+`scripts/start_slidercms.sh` runs `scripts/extra_startup.sh`, when present, after
+Django is responding and Celery has started. It runs in the background in the
+project directory, including in `--backend-only` mode. Output goes to
+`logs/extra_startup.log` under the runtime data directory. Hook failure does not
+stop Django or the kiosk; an already-running hook is not launched twice.
+
+The private hook is ignored by Git and excluded from source exports/updates.
+The deployment script copies it with the other local scripts. For a fresh Git
+clone, opt in with `cp scripts/extra_startup.sh.example scripts/extra_startup.sh`.
+The provided hook runs `sudo tailscale funnel 8000`. If sudo requires a password,
+run `sudo -v` in the same terminal before launching; the background hook cannot
+prompt for a password. No password is stored and no sudoers rules are changed.
+Funnel publishes the service to the internet, not just the private tailnet.
+The stop script does not stop this external tunnel; manage it through Tailscale.
+
+### Slide Library sections
+
+Run `.venv/bin/python manage.py migrate` after updating. The library's drag
+handles and up/down buttons save section order in `SlideLibraryConfig`. Playback
+uses this same order, skipping hidden or empty sources; ticker and fallback
+controls are not standalone slides. Section order is included in site exports.
+Expand/collapse state is remembered in the current browser; it does not change
+visibility in the display. Expand all and Collapse all affect every section.
+
+In the running slideshow, Left/Right jumps to the previous/next enabled section,
+wrapping at the ends. With only uploaded slides enabled, existing per-slide arrow
+navigation remains available. Paused previews and the mobile tracker keep their
+normal keyboard behavior. Keys pressed inside a third-party iframe cannot be
+captured by the parent page; focus the slideshow itself for navigation.
 
 - The active Django project name is `sliderCMS`.
 - If `git status` still shows deleted legacy package paths, that is Git reporting removals that are ready to be committed, not live project files.

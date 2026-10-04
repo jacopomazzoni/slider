@@ -283,7 +283,7 @@
                         </div>
                     {% elif post.content_type == 'html' %}
                         <div class="html-slide-shell" data-html-source-id="{{ post.html_source_element_id }}">
-                            <iframe class="html-slide-frame" sandbox="allow-scripts allow-forms allow-modals allow-popups allow-downloads allow-same-origin" referrerpolicy="no-referrer"></iframe>
+                            <iframe class="html-slide-frame" sandbox="allow-scripts allow-forms allow-modals allow-popups allow-downloads" referrerpolicy="no-referrer"></iframe>
                         </div>
                         {{ post.html_slide_document|json_script:post.html_source_element_id }}
                     {% endif %}
@@ -300,6 +300,7 @@
         <div id="transition-curtain" class="transition-curtain" aria-hidden="true"></div>
     </div>
     {% include "includes/breaking_news_ticker.html" %}
+    {% include "includes/section_navigation.html" with section_key="media" %}
 
     <script>
         let cycleCount = 0;
@@ -498,19 +499,7 @@
         }
 
         function goToNextSource() {
-            if (DATELINE_VISIBLE) {
-                window.location.href = DATELINE_URL;
-                return;
-            }
-            if (WEATHER_VISIBLE) {
-                window.location.href = WEATHER_URL;
-                return;
-            }
-            if (CALENDAR_VISIBLE) {
-                window.location.href = CALENDAR_URL;
-                return;
-            }
-            window.location.href = TRANSIT_VISIBLE ? "{% url 'transit_view' %}" : SLIDESHOW_URL;
+            window.SlideSections?.next();
         }
 
         function scheduleNextSlide(delay, runId) {

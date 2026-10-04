@@ -1,5 +1,6 @@
 from django import template
 from django.urls import reverse
+from accounts.permissions import is_site_admin
 
 
 register = template.Library()
@@ -8,7 +9,7 @@ register = template.Library()
 @register.simple_tag
 def nav_items(user):
     is_authenticated = getattr(user, 'is_authenticated', False)
-    is_superuser = getattr(user, 'is_superuser', False)
+    is_superuser = is_site_admin(user)
 
     items = [
         {

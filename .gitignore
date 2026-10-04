@@ -3,6 +3,7 @@
 .env.*
 !.env.example
 .secret_key
+/scripts/extra_startup.sh
 data/
 media/
 logs/

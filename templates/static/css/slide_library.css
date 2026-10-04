@@ -1,0 +1,26 @@
+.library-toolbar { display: flex; gap: 12px; flex-wrap: wrap; align-items: center; margin: 16px 0; }
+.library-toolbar button { border: 1px solid var(--border, #cbd5d1); background: var(--surface, white); color: var(--brand); padding: 10px 14px; border-radius: 4px; cursor: pointer; }
+#library-order-status { color: var(--text-muted, #52615c); }
+#library-sections .library-section { border: 0; border-top: 1px solid var(--border, #cbd5d1); padding: 0; margin: 0; box-shadow: none; border-radius: 0; background: transparent; min-width: 0; }
+.library-section > summary { display: flex; align-items: center; gap: 12px; padding: 20px 0; cursor: pointer; list-style: none; }
+.library-section > summary::-webkit-details-marker { display: none; }
+.library-section > summary::before { content: ''; width: 8px; height: 8px; flex: 0 0 8px; border-right: 2px solid currentColor; border-bottom: 2px solid currentColor; transform: rotate(-45deg); margin: 0 6px; }
+.library-section[open] > summary::before { transform: rotate(45deg); }
+.library-section > summary h2 { flex: 1; min-width: 0; margin: 0; font-size: 20px; overflow-wrap: anywhere; }
+.section-controls { display: flex; flex-shrink: 0; gap: 4px; }
+.section-controls button { width: 36px; height: 36px; padding: 6px; display: grid; place-items: center; border: 1px solid var(--border, #cbd5d1); border-radius: 4px; background: var(--surface, white); color: var(--brand); cursor: pointer; }
+.section-controls button:disabled { opacity: .35; cursor: default; }
+.section-controls svg { width: 20px; height: 20px; }
+.section-controls .section-drag { cursor: grab; }
+.library-section.is-dragging { opacity: .5; }
+.library-section-body { padding: 0 0 24px; min-width: 0; overflow-x: auto; }
+.library-section-body > form > .generated-slide-header { justify-content: flex-end; }
+.library-section-body .generated-slide-header:empty { display: none; }
+.library-section[data-section="weather"] .generated-settings-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+.library-section[data-section="weather"] .generated-field-hint { order: 1; grid-column: 1 / -1; }
+@media (max-width: 600px) {
+    .library-section > summary { gap: 6px; }
+    .library-section > summary h2 { font-size: 17px; }
+    .section-controls .section-drag { display: none; }
+    .library-section[data-section="weather"] .generated-settings-grid { grid-template-columns: minmax(0, 1fr); }
+}

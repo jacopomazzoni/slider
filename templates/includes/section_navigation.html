@@ -1,0 +1,5 @@
+{% load static %}
+{% if not paused_mode %}
+{{ display_sections|json_script:"display-sections" }}
+<script src="{% static 'js/section_navigation.js' %}" data-section="{{ section_key }}"></script>
+{% endif %}

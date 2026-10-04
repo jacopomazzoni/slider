@@ -7,6 +7,7 @@ PYTHON_BIN="${PYTHON_BIN:-$VENV_DIR/bin/python}"
 CELERY_BIN="${CELERY_BIN:-$VENV_DIR/bin/celery}"
 HOST="${HOST:-0.0.0.0}"
 PORT="${PORT:-8000}"
+# The kiosk and readiness check use loopback independently of Django's bind address.
 SERVER_HOST="${SERVER_HOST:-127.0.0.1}"
 SLIDE_PATH="${SLIDE_PATH:-/slidedisplay/}"
 TARGET_URL="${TARGET_URL:-http://${SERVER_HOST}:${PORT}${SLIDE_PATH}}"
@@ -37,6 +38,11 @@ Starts the local sliderCMS runtime:
 Options:
   --backend-only   Start Redis, Django, and Celery without launching the kiosk browser session.
   -h, --help       Show this help.
+
+Environment:
+  HOST             Django bind address (default: 0.0.0.0, all IPv4 interfaces).
+  PORT             Django port (default: 8000).
+  SERVER_HOST      Local browser/readiness hostname (default: 127.0.0.1).
 EOF
 }
 
@@ -168,7 +174,7 @@ PY
   fi
 
   log "Starting Django on ${HOST}:${PORT}"
-  nohup "$PYTHON_BIN" manage.py runserver "${HOST}:${PORT}" --noreload >"$DJANGO_LOG" 2>&1 &
+  nohup "$PYTHON_BIN" "$PROJECT_DIR/manage.py" runserver "${HOST}:${PORT}" --noreload >"$DJANGO_LOG" 2>&1 &
   pid=$!
   write_pid "$DJANGO_PID_FILE" "$pid"
   "$PYTHON_BIN" -c 'import json,sys; from pathlib import Path; Path(sys.argv[1]).write_text(json.dumps({"pid":int(sys.argv[2]),"host":sys.argv[3],"port":sys.argv[4]}))' "$LOG_DIR/runtime.json" "$pid" "$HOST" "$PORT"
@@ -239,6 +245,31 @@ start_kiosk_session() {
   fi
 }
 
+start_extra_hook() {
+  local hook="$PROJECT_DIR/scripts/extra_startup.sh"
+  local pid_file="$LOG_DIR/extra_startup.pid"
+  local pid
+  [ -f "$hook" ] || return 0
+  pid="$(read_pid "$pid_file" || true)"
+  if is_pid_running "$pid"; then
+    log "Extra startup hook is already running under PID $pid."
+    return
+  fi
+  log "Starting optional site hook (log: $LOG_DIR/extra_startup.log)."
+  nohup bash "$hook" </dev/null >"$LOG_DIR/extra_startup.log" 2>&1 &
+  pid=$!
+  write_pid "$pid_file" "$pid"
+  sleep 1
+  if ! is_pid_running "$pid"; then
+    if wait "$pid"; then
+      log "Extra startup hook completed."
+    else
+      warn "Extra startup hook failed; backend services remain running. Check $LOG_DIR/extra_startup.log (sudo may need authorization before launch)."
+    fi
+    rm -f "$pid_file"
+  fi
+}
+
 main() {
   while [ "$#" -gt 0 ]; do
     case "$1" in
@@ -260,13 +291,17 @@ main() {
   start_redis_if_needed
   start_django
   start_celery
+  start_extra_hook
   start_kiosk_session
 
   cat <<EOF
 
 sliderCMS runtime started.
 
-URL:
+Django listening address:
+  ${HOST}:${PORT}
+
+Local browser URL (not the listening address):
   $TARGET_URL
 
 Logs:

@@ -1,8 +1,10 @@
 {% extends "base.html" %}
+{% load static %}
 
 {% block title %}Slide Library{% endblock %}
 
 {% block content %}
+    <link rel="stylesheet" href="{% static 'css/slide_library.css' %}">
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap');
         
@@ -842,10 +844,16 @@
                 </svg>
                 Slide Library
             </h1>
-            <p class="page-subtitle">Drag the handles in the table below to change slideshow order. Saved order is used throughout the display.</p>
         </div>
         
-        <section class="generated-slide-panel" aria-labelledby="dateline-settings-title">
+        <div class="library-toolbar">
+            <button type="button" id="library-expand-all">Expand all</button>
+            <button type="button" id="library-collapse-all">Collapse all</button>
+            <span id="library-order-status" role="status" aria-live="polite"></span>
+        </div>
+        {{ library_section_order|json_script:"library-section-order" }}
+        <div id="library-sections" data-reorder-url="{% url 'reorder_sections' %}">
+        <section class="generated-slide-panel" data-section="dateline" aria-labelledby="dateline-settings-title">
             <form action="{% url 'update_generated_slide_config' dateline_config.scraper_name %}" method="POST">
                 {% csrf_token %}
                 <div class="generated-slide-header">
@@ -895,7 +903,7 @@
             </form>
         </section>
 
-        <section class="generated-slide-panel" aria-labelledby="weather-settings-title">
+        <section class="generated-slide-panel" data-section="weather" aria-labelledby="weather-settings-title">
             <form action="{% url 'update_weather_slide_config' %}" method="POST">
                 {% csrf_token %}
                 <div class="generated-slide-header">
@@ -938,7 +946,7 @@
             </form>
         </section>
 
-        <section class="generated-slide-panel" aria-labelledby="calendar-settings-title">
+        <section class="generated-slide-panel" data-section="calendar" aria-labelledby="calendar-settings-title">
             <form action="{% url 'update_calendar_slide_config' %}" method="POST">
                 {% csrf_token %}
                 <div class="generated-slide-header">
@@ -968,7 +976,7 @@
             </form>
         </section>
 
-        <section class="generated-slide-panel" aria-labelledby="transit-settings-title">
+        <section class="generated-slide-panel" data-section="transit" aria-labelledby="transit-settings-title">
             <form id="transit-dashboard-form" action="{% url 'update_transit_dashboard_config' %}" method="POST">
                 {% csrf_token %}
                 <div class="generated-slide-header">
@@ -1096,7 +1104,7 @@
             </form>
         </section>
 
-        <section class="generated-slide-panel" aria-labelledby="empty-display-settings-title">
+        <section class="generated-slide-panel" data-section="fallback" aria-labelledby="empty-display-settings-title">
             <form action="{% url 'update_empty_display_config' %}" method="POST">
                 {% csrf_token %}
                 <div class="generated-slide-header">
@@ -1119,7 +1127,7 @@
             </form>
         </section>
 
-        <section class="generated-slide-panel" aria-labelledby="breaking-news-ticker-title">
+        <section class="generated-slide-panel" data-section="ticker" aria-labelledby="breaking-news-ticker-title">
             <form action="{% url 'update_breaking_news_ticker_config' %}" method="POST">
                 {% csrf_token %}
                 <div class="generated-slide-header">
@@ -1213,9 +1221,10 @@
             </form>
         </section>
 
+        <section class="generated-slide-panel" data-section="media" aria-labelledby="media-settings-title">
+        <div class="generated-slide-header"><h2 id="media-settings-title" class="generated-slide-title">Uploaded Slides</h2></div>
         {% if object_list %}
             <table class="table">
-                <caption class="reorder-note">Drag rows to reorder slides. Generated slides keep their own settings above.</caption>
                 <thead>
                     <tr>
                         <th class="drag-cell">Move</th>
@@ -1350,7 +1359,7 @@
                                     </div>
                                 {% elif post.description and post.content_type != 'html' %}
                                     <div class="content-description">
-                                        {{ post.description|safe }}
+                                        {{ post.description|striptags }}
                                     </div>
                                 {% endif %}
                                 {% if post.link %}
@@ -1439,7 +1448,9 @@
                 <p>No content yet. Use the Add Slide button below to add the first slide.</p>
             </div>
         {% endif %}
-        
+        </section>
+        </div>
+        <script src="{% static 'js/slide_library.js' %}"></script>
         <div class="page-actions">
             <a href="{% url 'add_slide' %}" class="upload-btn">
                 <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="vertical-align: middle; margin-right: 6px;">

@@ -13,6 +13,7 @@
 <!-- Leaflet -->
 <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
 <link rel="stylesheet" href="{% static 'style.css' %}?v=nasa-gibs-contrast-frames">
+<style>.side-tab .group:empty { display: none; }</style>
 </head>
 <body>
 
@@ -47,15 +48,16 @@
   </footer>
 </div>
 {% include "includes/breaking_news_ticker.html" %}
+{% include "includes/section_navigation.html" with section_key="weather" %}
 
 <script>
   window.WEATHER_OVERLAY_SOURCE = "{{ weather_config.overlay_source|default:'rainviewer'|escapejs }}";
   window.WEATHER_MAP_LAYER = "{{ weather_config.map_layer|default:'osm_hot'|escapejs }}";
   window.WEATHER_SLIDE_DURATION = {{ weather_config.duration_seconds|default:24 }} * 1000;
   window.SLIDE_PAUSED = {{ paused_mode|yesno:"true,false" }};
-  window.WEATHER_NEXT_URL = "{% if calendar_slide_available %}{% url 'calendar_view' %}{% elif transit_dashboard_available %}{% url 'transit_view' %}{% else %}{% url 'slidedisplay' %}{% endif %}";
+  window.WEATHER_NEXT_URL = "{{ section_next_urls.weather|default:'/slidedisplay/'|escapejs }}";
 </script>
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
-<script src="{% static 'app.js' %}?v=paused-slide-mode"></script>
+<script src="{% static 'app.js' %}?v=weather-valid-values"></script>
 </body>
 </html>

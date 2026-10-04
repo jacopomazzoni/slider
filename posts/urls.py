@@ -15,6 +15,7 @@ urlpatterns = [
     path("manage-slides/", RedirectView.as_view(pattern_name="manage_slides", permanent=False)),
     path("allimages/", RedirectView.as_view(pattern_name="manage_slides", permanent=False)),
     path("slide-library/reorder/", views.reorder_slides, name="reorder_slides"),
+    path("slide-library/reorder-sections/", views.reorder_sections, name="reorder_sections"),
     path("slide-library/edit-image/<str:pk>/", views.edit_slide_image, name="edit_slide_image"),
     path("slide-library/edit-html/<str:pk>/", views.edit_html_slide, name="edit_html_slide"),
     path("slide-library/edit-rich-text/<str:pk>/", views.edit_rich_text_slide, name="edit_rich_text_slide"),

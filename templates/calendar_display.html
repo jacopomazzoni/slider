@@ -64,12 +64,13 @@
         <div id="calendar-status" class="calendar-status" hidden>Loading calendar...</div>
     </main>
     {% include "includes/breaking_news_ticker.html" %}
+    {% include "includes/section_navigation.html" with section_key="calendar" %}
 
     <script>
         const CALENDAR_PUBLIC_URL = "{{ calendar_config.public_url|escapejs }}";
         const CALENDAR_DURATION = {{ calendar_config.duration_seconds|default:30 }} * 1000;
         const SLIDE_PAUSED = {{ paused_mode|yesno:"true,false" }};
-        const NEXT_URL = "{% if transit_dashboard_available %}{% url 'transit_view' %}{% else %}{% url 'slidedisplay' %}{% endif %}";
+        const NEXT_URL = "{{ section_next_urls.calendar|default:'/slidedisplay/'|escapejs }}";
         const frame = document.getElementById("calendar-frame");
         const statusNode = document.getElementById("calendar-status");
         const displayStartedAt = Date.now();

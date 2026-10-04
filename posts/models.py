@@ -800,6 +800,20 @@ class SingletonConfigModel(models.Model):
         super().save(*args, **kwargs)
 
 
+def default_library_sections():
+    return ['media', 'dateline', 'weather', 'calendar', 'transit', 'ticker', 'fallback']
+
+
+class SlideLibraryConfig(SingletonConfigModel):
+    section_order = models.JSONField(default=default_library_sections)
+
+    @property
+    def ordered_sections(self):
+        allowed = default_library_sections()
+        saved = self.section_order if isinstance(self.section_order, list) else []
+        return list(dict.fromkeys([key for key in saved if isinstance(key, str) and key in allowed] + allowed))
+
+
 class WeatherSlideConfig(SingletonConfigModel):
     RAINVIEWER = 'rainviewer'
     NASA_GIBS = 'nasa_gibs'

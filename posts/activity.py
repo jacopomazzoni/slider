@@ -16,6 +16,7 @@ ACTIONS = {
     'edit_google_slides_slide': 'Edit Google Slides', 'delete_image': 'Delete slide',
     'update_slide_duration': 'Change slide playback', 'update_slide_title': 'Rename slide',
     'update_slide_visibility': 'Change slide visibility', 'reorder_slides': 'Reorder slides',
+    'reorder_sections': 'Reorder display sections',
     'update_generated_slide_config': 'Change Dateline settings',
     'update_weather_slide_config': 'Change weather settings',
     'update_calendar_slide_config': 'Change calendar settings',

@@ -53,7 +53,7 @@ class ActivityLogTests(TestCase):
         self.post('login', {'username': self.operator.username, 'password': 'test'})
         self.assertEqual(ActivityLog.objects.first().user_id, self.operator.pk)
         with self.captureOnCommitCallbacks(execute=True):
-            self.client.get(reverse('logout'))
+            self.client.post(reverse('logout'))
         entry = ActivityLog.objects.first()
         self.assertEqual(entry.action, 'Log out')
         self.assertEqual(entry.user_id, self.operator.pk)
