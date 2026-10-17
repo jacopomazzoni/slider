@@ -2,6 +2,7 @@ from django.urls import path
 from django.views.generic import RedirectView
 from . import views
 from . import update_views
+from . import design_views
 from django.conf import settings
 from django.conf.urls.static import static
 
@@ -10,6 +11,8 @@ urlpatterns = [
     path('settings/updates/install/', update_views.update_install, name='update_install'),
     #path("", HomePageView.as_view(), name="home"),
     path("add-slide/", views.upload_image, name="add_slide"),
+    path("add-slide/designer/", design_views.design_editor, name="add_design_slide"),
+    path("slide-library/edit-design/<int:pk>/", design_views.design_editor, name="edit_design_slide"),
     path("post/", RedirectView.as_view(pattern_name="add_slide", permanent=False)),
     path("slide-library/", views.all_images_view, name="manage_slides"),
     path("manage-slides/", RedirectView.as_view(pattern_name="manage_slides", permanent=False)),

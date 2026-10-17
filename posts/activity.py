@@ -12,6 +12,7 @@ logger = logging.getLogger(__name__)
 ACTIONS = {
     'update_install': 'Install software update',
     'add_slide': 'Add slide', 'edit_slide_image': 'Edit image',
+    'add_design_slide': 'Add slide design', 'edit_design_slide': 'Edit slide design',
     'edit_rich_text_slide': 'Edit rich text', 'edit_html_slide': 'Edit HTML',
     'edit_google_slides_slide': 'Edit Google Slides', 'delete_image': 'Delete slide',
     'update_slide_duration': 'Change slide playback', 'update_slide_title': 'Rename slide',

@@ -1,0 +1,81 @@
+{% load static design_fonts %}
+{% design_font_groups as font_groups %}
+<link rel="stylesheet" href="{% static 'css/design_editor.css' %}?v=2">
+<form class="design-editor" id="design-editor" method="post" enctype="multipart/form-data" action="{% if design_post %}{% url 'edit_design_slide' design_post.pk %}{% else %}{% url 'add_design_slide' %}{% endif %}">
+  {% csrf_token %}
+  <div class="design-meta">
+    <label>Slide title<input name="title" required maxlength="200" value="{{ design_post.title|default:'' }}" placeholder="Untitled slide"></label>
+    <label>Duration (seconds)<input name="duration_seconds" type="number" min="1" max="3600" value="{{ design_post.duration_seconds|default:8 }}" required></label>
+    <label>Transition<select name="transition_type">{% for value, label in slide_transition_choices %}<option value="{{ value }}" {% if design_post.transition_type == value or not design_post and value == 'crossfade' %}selected{% endif %}>{{ label }}</option>{% endfor %}</select></label>
+  </div>
+  <div class="design-toolbar" role="toolbar" aria-label="Design tools">
+    <div class="design-tool-group">
+      <button type="button" data-action="text" title="Add text" aria-label="Add text">{% include 'includes/designer_icon.html' with icon='text' %}</button>
+      <button type="button" data-action="image" title="Add image" aria-label="Add image">{% include 'includes/designer_icon.html' with icon='image' %}</button>
+      <button type="button" data-action="rect" title="Add rectangle" aria-label="Add rectangle">{% include 'includes/designer_icon.html' with icon='rect' %}</button>
+      <button type="button" data-action="circle" title="Add circle" aria-label="Add circle">{% include 'includes/designer_icon.html' with icon='circle' %}</button>
+      <input type="file" id="design-image-file" accept="image/png,image/jpeg,image/webp" hidden>
+    </div>
+    <div class="design-tool-group">
+      <button type="button" data-action="undo" title="Undo" aria-label="Undo" disabled>{% include 'includes/designer_icon.html' with icon='undo' %}</button>
+      <button type="button" data-action="redo" title="Redo" aria-label="Redo" disabled>{% include 'includes/designer_icon.html' with icon='redo' %}</button>
+      <button type="button" data-action="duplicate" title="Duplicate layer" aria-label="Duplicate layer" data-selection disabled>{% include 'includes/designer_icon.html' with icon='duplicate' %}</button>
+      <button type="button" data-action="delete" title="Delete layer" aria-label="Delete layer" data-selection disabled>{% include 'includes/designer_icon.html' with icon='delete' %}</button>
+    </div>
+    <div class="design-tool-group">
+      <button type="button" data-action="center-x" title="Center horizontally" aria-label="Center horizontally" data-selection disabled>{% include 'includes/designer_icon.html' with icon='center-x' %}</button>
+      <button type="button" data-action="center-y" title="Center vertically" aria-label="Center vertically" data-selection disabled>{% include 'includes/designer_icon.html' with icon='center-y' %}</button>
+    </div>
+    <label class="design-size">Canvas<select id="design-size"><option value="1920x1080">16:9 Landscape</option><option value="1080x1920">9:16 Portrait</option><option value="1440x1080">4:3 Landscape</option><option value="1080x1080">1:1 Square</option></select></label>
+    <label class="design-swatch">Background<input id="design-background" type="color" value="#FFFFFF"></label>
+  </div>
+  <div class="design-workspace">
+    <div class="design-stage" id="design-stage"><canvas id="design-canvas" aria-label="Slide design canvas"></canvas></div>
+    <aside class="design-inspector" aria-label="Design inspector">
+      <h3>Selection</h3><p id="design-selection-name" class="design-muted">No layer selected</p>
+      <fieldset id="design-properties" disabled>
+        <div class="design-pair"><label>X<input data-property="left" type="number" min="-8000" max="8000" step="any"></label><label>Y<input data-property="top" type="number" min="-8000" max="8000" step="any"></label></div>
+        <div class="design-pair"><label>Width<input data-property="visualWidth" type="number" min="1" max="8000" step="any"></label><label>Height<input data-property="visualHeight" type="number" min="1" max="8000" step="any"></label></div>
+        <label>Rotation<input data-property="angle" type="range" min="-180" max="180" step="1"><output data-output="angle">0 degrees</output></label>
+        <label>Opacity<input data-property="opacity" type="range" min="0" max="1" step="0.01"><output data-output="opacity">100%</output></label>
+        <label class="design-swatch" id="design-fill-label">Fill<input data-property="fill" type="color" value="#222222"></label>
+        <div class="design-effects">
+          <h4>Stroke</h4>
+          <label class="design-swatch">Color<input data-effect="strokeColor" type="color" value="#222222"></label>
+          <label>Width (px)<input data-effect="strokeWidth" type="number" min="0" max="100" step="1" value="0"></label>
+        </div>
+        <div class="design-effects" id="design-radius-properties" hidden>
+          <h4>Corners</h4>
+          <label>Radius (px)<input data-effect="cornerRadius" type="range" min="0" max="500" step="1" value="0"><output data-output="cornerRadius">0 px</output></label>
+        </div>
+        <div class="design-effects">
+          <label class="design-effect-toggle"><input data-effect="shadowEnabled" type="checkbox"> Drop shadow</label>
+          <div id="design-shadow-properties" hidden>
+            <label class="design-swatch">Color<input data-effect="shadowColor" type="color" value="#000000"></label>
+            <label>Opacity<input data-effect="shadowOpacity" type="range" min="0" max="1" step="0.01" value="0.35"><output data-output="shadowOpacity">35%</output></label>
+            <label>Blur (px)<input data-effect="shadowBlur" type="range" min="0" max="100" step="1" value="12"><output data-output="shadowBlur">12 px</output></label>
+            <div class="design-pair"><label>X offset<input data-effect="shadowOffsetX" type="number" min="-200" max="200" step="1" value="6"></label><label>Y offset<input data-effect="shadowOffsetY" type="number" min="-200" max="200" step="1" value="6"></label></div>
+          </div>
+        </div>
+        <div id="design-text-properties" hidden>
+          <label>Text<textarea data-property="text" rows="3" maxlength="5000"></textarea></label>
+          <label>Font<select data-property="fontFamily">{% for group, families in font_groups %}<optgroup label="{{ group }}">{% for family in families %}<option value="{{ family }}"{% if group != 'System fonts' %} data-google-font="true"{% endif %}>{{ family }}</option>{% endfor %}</optgroup>{% endfor %}</select></label>
+          <label>Font size<input data-property="fontSize" type="number" min="8" max="400" step="any"></label>
+          <div class="design-tool-group design-text-tools">
+            <button type="button" data-style="fontWeight" aria-pressed="false" title="Bold" aria-label="Bold"><b>B</b></button>
+            <button type="button" data-style="fontStyle" aria-pressed="false" title="Italic" aria-label="Italic"><i>I</i></button>
+            <button type="button" data-style="underline" aria-pressed="false" title="Underline" aria-label="Underline"><u>U</u></button>
+            <label>Align<select data-property="textAlign"><option value="left">Left</option><option value="center">Center</option><option value="right">Right</option></select></label>
+          </div>
+        </div>
+      </fieldset>
+      <div class="design-layers-heading"><h3>Layers</h3><span id="design-layer-count">0 / 80</span></div>
+      <ol id="design-layers" aria-label="Layers, front to back"></ol>
+    </aside>
+  </div>
+  <div class="design-footer"><span id="design-size-status">1920 x 1080</span><span id="design-status" role="status">Ready</span><button type="submit" class="design-save">{% include 'includes/designer_icon.html' with icon='save' %}<span>Save Slide</span></button></div>
+  <p id="design-error" role="alert" hidden></p>
+</form>
+{% if design_post %}{{ design_post.design_document|json_script:'design-document' }}{% endif %}
+<script src="{% static 'vendor/fabric/fabric-7.4.0.min.js' %}" defer></script>
+<script src="{% static 'js/design_editor.js' %}?v=3" defer></script>

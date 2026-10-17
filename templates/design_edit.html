@@ -1,0 +1,9 @@
+{% extends 'base.html' %}
+{% block title %}{% if design_post %}Edit Design{% else %}Slide Designer{% endif %}{% endblock %}
+{% block content %}
+<div class="design-page" style="max-width:1480px;margin:32px auto;padding:0 20px 40px;">
+  <h1 class="page-title">{% if design_post %}Edit Design{% else %}Slide Designer{% endif %}</h1>
+  {% include 'includes/design_editor.html' %}
+  <p><a href="{% url 'manage_slides' %}">Slide Library</a></p>
+</div>
+{% endblock %}

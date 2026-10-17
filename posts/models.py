@@ -74,6 +74,7 @@ class Post(models.Model):
     CONTENT_HTML = 'html'
     CONTENT_YOUTUBE = 'youtube'
     CONTENT_GOOGLE_SLIDES = 'gslides'
+    CONTENT_DESIGN = 'design'
 
     TRANSITION_FADE_GRAY = 'fade_gray'
     TRANSITION_FADE_BLACK = 'fade_black'
@@ -92,6 +93,7 @@ class Post(models.Model):
         (CONTENT_HTML, 'Custom HTML'),
         (CONTENT_YOUTUBE, 'YouTube Slide'),
         (CONTENT_GOOGLE_SLIDES, 'Google Slides'),
+        (CONTENT_DESIGN, 'Slide Designer'),
     ]
 
     TRANSITION_CHOICES = [
@@ -183,6 +185,7 @@ class Post(models.Model):
     preview_image = models.FileField(upload_to='renditions/', blank=True, null=True)
     media_variants = models.JSONField(default=dict, blank=True)
     image_edit_settings = models.JSONField(default=dict, blank=True)
+    design_document = models.JSONField(default=dict, blank=True)
 
     def save(self, *args, **kwargs):
         was_adding = self._state.adding
@@ -270,6 +273,9 @@ class Post(models.Model):
             )
         elif self.content_type == self.CONTENT_VIDEO:
             manifest = build_video_thumbnail(Path(self.cover.path), output_dir)
+        elif self.content_type == self.CONTENT_DESIGN:
+            from .design import build_design_assets
+            manifest = build_design_assets(Path(self.cover.path), output_dir)
         else:
             return
 
@@ -329,7 +335,7 @@ class Post(models.Model):
             or generated_assets_missing
         ):
             self._rebuild_media_assets()
-        elif self.content_type == self.CONTENT_VIDEO and (
+        elif self.content_type in (self.CONTENT_VIDEO, self.CONTENT_DESIGN) and (
             not self.preview_image
             or uses_legacy_thumbnail
             or generated_assets_missing
@@ -496,6 +502,8 @@ class Post(models.Model):
 
     @property
     def initial_display_url(self):
+        if self.content_type == self.CONTENT_DESIGN:
+            return self.cover_media_url
         if self.content_type == self.CONTENT_IMAGE and self.media_variants.get("animated", False):
             return self.cover_media_url
         if self.content_type == self.CONTENT_IMAGE:

@@ -320,7 +320,7 @@ def display(request):
 @login_required
 def all_images_view(request):
     """Display all stored slide posts."""
-    posts = list(Post.objects.all().order_by('display_order', 'id'))
+    posts = list(Post.objects.defer('design_document').order_by('display_order', 'id'))
     for post in posts:
         try:
             post.ensure_media_assets()
@@ -852,7 +852,7 @@ def breaking_news_ticker_feed(request):
 
 def slidedisplay(request):
     """Render the slideshow for all configured slide types."""
-    posts = list(Post.objects.filter(is_visible=True).order_by('display_order', 'id'))
+    posts = list(Post.objects.filter(is_visible=True).defer('design_document').order_by('display_order', 'id'))
     for post in posts:
         try:
             post.ensure_media_assets()
@@ -873,7 +873,7 @@ def slidedisplay(request):
 
 
 def paused_post_view(request, pk):
-    post = get_object_or_404(Post, pk=pk)
+    post = get_object_or_404(Post.objects.defer('design_document'), pk=pk)
     try:
         post.ensure_media_assets()
     except Exception:

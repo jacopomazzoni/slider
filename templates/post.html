@@ -432,6 +432,7 @@
       <button type="button" class="studio-tab" data-tab-target="youtube" role="tab" aria-selected="false">YouTube</button>
       <button type="button" class="studio-tab" data-tab-target="gslides" role="tab" aria-selected="false">Google Slides</button>
       <button type="button" class="studio-tab" data-tab-target="html" role="tab" aria-selected="false">Custom HTML</button>
+      <button type="button" class="studio-tab" data-tab-target="design" role="tab" aria-selected="false">Slide Designer</button>
     </div>
 
     <section class="studio-panel" data-tab-panel="media" role="tabpanel">
@@ -737,6 +738,9 @@
       </form>
     </section>
 
+    <section class="studio-panel" data-tab-panel="design" role="tabpanel">
+      {% include 'includes/design_editor.html' %}
+    </section>
     <section class="studio-panel" data-tab-panel="html" role="tabpanel">
       <div class="panel-head">
         <h2 class="panel-title">Custom HTML</h2>

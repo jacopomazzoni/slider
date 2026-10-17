@@ -1259,6 +1259,8 @@
                                     YouTube Slide
                                 {% elif post.content_type == 'gslides' %}
                                     Google Slides
+                                {% elif post.content_type == 'design' %}
+                                    Slide Designer
                                 {% elif post.content_type == 'html' %}
                                     Custom HTML
                                 {% else %}
@@ -1266,7 +1268,9 @@
                                 {% endif %}
                             </td>
                             <td>
-                                {% if post.content_type == 'image' and post.cover %}
+                                {% if post.content_type == 'design' and post.cover %}
+                                    <img src="{{ post.preview_url }}" alt="{{ post.title }}" width="250" loading="lazy" decoding="async">
+                                {% elif post.content_type == 'image' and post.cover %}
                                     <img src="{% if post.slide_library_preview_url %}{{ post.slide_library_preview_url }}{% else %}{{ post.cover_media_url }}{% endif %}" alt="{{ post.title }}" width="250" loading="lazy" decoding="async">
                                 {% elif post.content_type == 'video' and post.cover %}
                                     {% if post.preview_url %}
@@ -1324,6 +1328,8 @@
                                             <span class="color-chip" style="background: {{ post.background_color }};"></span>
                                             Background
                                         </span>
+                                    {% elif post.content_type == 'design' %}
+                                        <span class="content-badge">Slide Designer</span>
                                     {% elif post.content_type == 'html' %}
                                         <span class="content-badge">Custom HTML</span>
                                         <span class="content-badge">Rendered In Isolated Frame</span>
@@ -1423,6 +1429,8 @@
                                     </form>
                                     {% if post.is_editable_image %}
                                         <a href="{% url 'edit_slide_image' post.pk %}" class="edit-btn">Edit Image</a>
+                                    {% elif post.content_type == 'design' %}
+                                        <a href="{% url 'edit_design_slide' post.pk %}" class="edit-btn">Edit Design</a>
                                     {% elif post.content_type == 'gslides' %}
                                         <a href="{% url 'edit_google_slides_slide' post.pk %}" class="edit-btn">Edit Google Slides</a>
                                     {% elif post.content_type == 'html' %}

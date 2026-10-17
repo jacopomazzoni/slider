@@ -78,6 +78,29 @@ text or a URL and small, medium, or large sizing. Slides store portable QR
 descriptors, not image uploads; the editor and display generate density-aware
 PNGs locally using the shared QR helper. Existing rich text remains sanitized.
 
+## Slide Designer
+
+**Add Slide > Slide Designer** offers a layered canvas editor powered by locally
+bundled Fabric.js 7.4.0 (MIT). Add text, PNG/JPEG/WebP images, rectangles, and circles;
+drag, resize, rotate, reorder, hide, or lock layers. The inspector includes six
+system fonts and 75 Google Fonts grouped by serif, sans-serif, and monospace,
+with bold, italic, underline, colors, alignment,
+opacity, and exact positioning, with undo/redo.
+Landscape, portrait, square, and 4:3 canvases are supported.
+
+Editable layouts and embedded images are saved in the database and included in
+site exports. Reopen them with **Edit Design** in the Slide Library. Limits are
+80 layers and 12 MB per layout; imported images are reduced to at most 2048 pixels
+on their longest edge. Fonts use the editing computer's installed fonts or its
+browser fallbacks. Google Fonts require an internet connection while editing;
+the editor waits for them to load before saving and reports unavailable fonts.
+Playback uses a saved PNG rendered at twice the canvas size
+(3840 x 2160 for landscape), plus a separate 250-pixel library thumbnail, so the
+Raspberry Pi does not need to run the editor or resolve those fonts.
+
+Apply migration `0047` before using this mode:
+`.venv/bin/python manage.py migrate`. No additional Python dependencies are needed.
+
 ## Local Setup
 
 Superusers can review **Settings > Activity Log** for timestamped operator actions

@@ -234,7 +234,7 @@
         {% if posts %}
             {% for post in posts %}
                 <div class="mySlides" data-duration-seconds="{{ post.duration_seconds|default:8 }}" data-transition-type="{{ post.transition_type|default:'crossfade' }}" data-renditions="{{ post.display_renditions_json|escapejs }}" data-preview-url="{{ post.preview_url }}" data-cover-url="{{ post.cover_media_url }}" aria-hidden="true">
-                    {% if post.content_type == 'image' and post.cover %}
+                    {% if post.content_type == 'image' and post.cover or post.content_type == 'design' and post.cover %}
                         <!-- Image Slide -->
                         <img
                             src="{{ post.initial_display_url }}"

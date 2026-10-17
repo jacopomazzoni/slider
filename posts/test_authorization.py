@@ -13,6 +13,7 @@ from .urls import urlpatterns
 
 # Argument values point at real objects so a missing guard cannot hide behind a 404.
 EDITOR_ROUTES = {
+    'add_design_slide': (), 'edit_design_slide': ('slide',),
     'add_slide': (), 'manage_slides': (), 'reorder_slides': (), 'reorder_sections': (),
     'edit_slide_image': ('slide',), 'edit_html_slide': ('slide',),
     'edit_rich_text_slide': ('slide',), 'edit_google_slides_slide': ('slide',),
@@ -37,6 +38,7 @@ PUBLIC_ROUTES = {
     'transit_mobile_qr', 'transit_map_data', 'transit_live_data',
 }
 FORM_ROUTES = {
+    'add_design_slide', 'edit_design_slide',
     'add_slide', 'edit_slide_image', 'edit_html_slide', 'edit_rich_text_slide',
     'edit_google_slides_slide', 'signup',
 }
